@@ -1,0 +1,12 @@
+# Build outputs
+*.exe
+*.o
+*.obj
+*.dll
+
+# VS Code settings
+.vscode/
+
+# System / temp files
+*.log
+*.tmp
