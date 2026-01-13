@@ -5,7 +5,7 @@ void menu(sf::RenderWindow& window)
 {
     // Load menu texture
     sf::Texture menuTexture;
-    if (!menuTexture.loadFromFile("assets/menu.jpeg"))
+    if (!menuTexture.loadFromFile("assets/menu.png"))
         return; // Exit function if file not found
 
     sf::Sprite menuSprite(menuTexture);
