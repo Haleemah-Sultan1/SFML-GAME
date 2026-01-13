@@ -1,110 +1,186 @@
 #include <SFML/Graphics.hpp>
+#include <iostream>
 
 // Function to handle the Menu state
-void menu(sf::RenderWindow& window)
+void menu(sf::RenderWindow& window, int& selectedPlayer)
 {
-    // Load menu texture
+    // 1. Load Background and Font
     sf::Texture menuTexture;
-    if (!menuTexture.loadFromFile("assets/menu.png"))
-        return; // Exit function if file not found
-
+    if (!menuTexture.loadFromFile("assets/menu.png")) return; 
     sf::Sprite menuSprite(menuTexture);
+    
+    sf::Vector2u winSize = window.getSize();
+    sf::Vector2u texSize = menuTexture.getSize();
+    menuSprite.setScale({ (float)winSize.x / texSize.x, (float)winSize.y / texSize.y });
 
-    // Optional: Scale menu background to fit window size
-    sf::Vector2u windowSize = window.getSize();
-    sf::Vector2u textureSize = menuTexture.getSize();
-    menuSprite.setScale({
-        static_cast<float>(windowSize.x) / textureSize.x,
-        static_cast<float>(windowSize.y) / textureSize.y
-    });
+    sf::Font font;
+    if (!font.openFromFile("assets/font.ttf")) return;
 
+    sf::Texture p1Tex, p2Tex, credTex;
+    if (!p1Tex.loadFromFile("assets/p1_avatar.png")) { std::cout << "Error loading p1\n"; }
+    if (!p2Tex.loadFromFile("assets/p2_avatar.png")) { std::cout << "Error loading p2\n"; }
+    if (!credTex.loadFromFile("assets/pic.png")) { std::cout << "Error loading pic.png\n"; }
+
+    sf::Sprite p1Sprite(p1Tex), p2Sprite(p2Tex), credSprite(credTex);
+    
+    // Position Player Avatars
+    p1Sprite.setPosition({410.f, 310.f});
+    if (p1Tex.getSize().x > 0)
+        p1Sprite.setScale({180.f / p1Tex.getSize().x, 180.f / p1Tex.getSize().y});
+    
+    p2Sprite.setPosition({690.f, 310.f});
+    if (p2Tex.getSize().x > 0)
+        p2Sprite.setScale({180.f / p2Tex.getSize().x, 180.f / p2Tex.getSize().y});
+
+    // Position and Size of Credit Picture
+    credSprite.setPosition({750.f, 300.f}); // Original spot
+    credSprite.setScale({1.2f, 1.2f});       // Made slightly larger than 1.0f
+
+    // COLORS
+    sf::Color yellowishBrown(204, 153, 51, 220); // Mustard yellow
+    sf::Color darkBrown(60, 40, 20);            // Dark brown outline/text
+    sf::Color instructionGrey(200, 200, 200);   // Darker off-white
+
+    // BUTTONS SETUP
+    sf::RectangleShape btnPlay({250.f, 50.f}), btnInst({250.f, 50.f}), btnCred({250.f, 50.f});
+    btnPlay.setPosition({515.f, 300.f}); btnInst.setPosition({515.f, 370.f}); btnCred.setPosition({515.f, 440.f});
+    
+    auto setupBtn = [&](sf::RectangleShape& b) {
+        b.setFillColor(yellowishBrown); b.setOutlineThickness(3); b.setOutlineColor(darkBrown);
+    };
+    setupBtn(btnPlay); setupBtn(btnInst); setupBtn(btnCred);
+
+    sf::Text txtPlay(font, "PLAY", 25); txtPlay.setFillColor(darkBrown); txtPlay.setPosition({610.f, 310.f});
+    sf::Text txtInst(font, "INSTRUCTIONS", 25); txtInst.setFillColor(darkBrown); txtInst.setPosition({545.f, 380.f});
+    sf::Text txtCred(font, "CREDITS", 25); txtCred.setFillColor(darkBrown); txtCred.setPosition({590.f, 450.f});
+
+    // Selection Boxes for Players
+    sf::RectangleShape p1Box({200.f, 200.f}), p2Box({200.f, 200.f});
+    p1Box.setPosition({400.f, 300.f}); p2Box.setPosition({680.f, 300.f});
+    p1Box.setFillColor(sf::Color(255, 255, 255, 30));
+    p2Box.setFillColor(sf::Color(255, 255, 255, 30));
+    p1Box.setOutlineThickness(5); p2Box.setOutlineThickness(5);
+
+    int menuState = 0; // 0=Main, 1=Inst, 2=Cred, 3=PlayerSelect
     bool inMenu = true;
+
     while (inMenu && window.isOpen())
     {
-        // Event handling for the menu
         while (const std::optional event = window.pollEvent())
         {
-            if (event->is<sf::Event::Closed>())
-            {
-                window.close();
-            }
+            if (event->is<sf::Event::Closed>()) window.close();
 
-            // Check for "Enter" key to start the game
-            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+            if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>())
             {
-                if (keyPressed->code == sf::Keyboard::Key::Enter)
+                if (mousePressed->button == sf::Mouse::Button::Left)
                 {
-                    inMenu = false; // Break the menu loop to start the game
+                    sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                    if (menuState == 0) {
+                        if (btnPlay.getGlobalBounds().contains(mPos)) menuState = 3; 
+                        if (btnInst.getGlobalBounds().contains(mPos)) menuState = 1;
+                        if (btnCred.getGlobalBounds().contains(mPos)) menuState = 2;
+                    }
+                    else if (menuState == 3) {
+                        if (p1Box.getGlobalBounds().contains(mPos)) selectedPlayer = 1;
+                        if (p2Box.getGlobalBounds().contains(mPos)) selectedPlayer = 2;
+                    }
                 }
+            }
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyPressed->code == sf::Keyboard::Key::Escape) menuState = 0;
+                if (menuState == 3 && keyPressed->code == sf::Keyboard::Key::Enter) inMenu = false; 
             }
         }
 
+        p1Box.setOutlineColor(selectedPlayer == 1 ? sf::Color::Yellow : sf::Color::White);
+        p2Box.setOutlineColor(selectedPlayer == 2 ? sf::Color::Yellow : sf::Color::White);
+
         window.clear();
         window.draw(menuSprite);
+
+        if (menuState == 0) { // MAIN MENU 
+            window.draw(btnPlay); window.draw(txtPlay);
+            window.draw(btnInst); window.draw(txtInst);
+            window.draw(btnCred); window.draw(txtCred);
+        }
+        else if (menuState == 1) { // INSTRUCTIONS 
+            // Dark window background
+            sf::RectangleShape overlay({1100.f, 500.f});
+            overlay.setPosition({90.f, 150.f});
+            overlay.setFillColor(sf::Color(0, 0, 0, 220)); // Very dark overlay
+            overlay.setOutlineThickness(3);
+            overlay.setOutlineColor(yellowishBrown);
+            window.draw(overlay);
+
+            // Larger, yellowish title
+            sf::Text instTitle(font, "Karachi Survival Guide:", 55);
+            instTitle.setPosition({130.f, 180.f});
+            instTitle.setFillColor(yellowishBrown);
+            window.draw(instTitle);
+
+            // Darker white/grey body text
+            sf::Text instBody(font, "1. Keep your phone hidden like it's a state secret.\n2. Trust the driver... but also pray quietly.\n3. If someone says \"bhai tension nahi leni\" - tension is guaranteed.\n4. If a road is empty, something is wrong.\n5. If it rains, cancel your plans, your hopes, and your shoes.", 28);
+            instBody.setPosition({130.f, 290.f});
+            instBody.setFillColor(instructionGrey);
+            window.draw(instBody);
+
+            sf::Text backMsg(font, "Press ESC to go back", 20);
+            backMsg.setPosition({550.f, 600.f});
+            window.draw(backMsg);
+        }
+        else if (menuState == 2) { // CREDITS
+            // Header moved to the left
+            sf::Text credHeader(font, "CREDITS:\nDeveloped by:", 50);
+            credHeader.setPosition({150.f, 350.f}); 
+            credHeader.setFillColor(yellowishBrown);
+            window.draw(credHeader);
+
+            // Names at original spot
+            sf::Text names(font, "Haleema Zuhaib\nSeerat Fatima\nHaiqa Shahid", 50);
+            names.setPosition({450.f, 455.f}); 
+            names.setFillColor(sf::Color::White);
+            window.draw(names);
+
+            window.draw(credSprite); // Picture at original spot
+        }
+        else if (menuState == 3) { //PLAYER SELECTION
+            sf::Text prompt(font, "SELECT PLAYER & PRESS ENTER", 30);
+            prompt.setPosition({400.f, 150.f}); prompt.setFillColor(yellowishBrown);
+            window.draw(prompt);
+            window.draw(p1Box); window.draw(p2Box);
+            window.draw(p1Sprite); window.draw(p2Sprite); 
+        }
         window.display();
     }
 }
 
 int main()
 {
-    // Create window (SFML 3 syntax)
-    sf::RenderWindow window(
-        sf::VideoMode({1280, 720}),
-        "SFML 3 Endless Background Forward"
-    );
+    sf::RenderWindow window(sf::VideoMode({1280, 720}), "Karachi Survival - SFML 3");
     window.setFramerateLimit(60);
 
-    // --- START MENU ---
-    // This will block execution until the user presses Enter
-    menu(window);
+    int playerChoice = 1; 
+    menu(window, playerChoice);
 
-    // If the user closed the window during the menu, don't run the game
     if (!window.isOpen()) return 0;
 
-    // --- GAME SETUP ---
-    // Load texture
+    // --- MAIN GAME LOOP ---
     sf::Texture bgTexture;
-    if (!bgTexture.loadFromFile("assets/gpt5.png"))
-        return -1;
-
-    // Create sprites
-    sf::Sprite bg1(bgTexture);
-    sf::Sprite bg2(bgTexture);
-
-    // Get background width
-    float bgWidth = static_cast<float>(bgTexture.getSize().x);
-
-    // Position side by side
-    bg1.setPosition({0.f, 0.f});
+    if (!bgTexture.loadFromFile("assets/gpt5.png")) return -1;
+    sf::Sprite bg1(bgTexture), bg2(bgTexture);
+    float bgWidth = (float)bgTexture.getSize().x;
     bg2.setPosition({-bgWidth, 0.f}); 
 
-    float speed = 2.5f;
-
-    // --- GAME LOOP ---
-    while (window.isOpen())
-    {
-        while (const std::optional event = window.pollEvent())
-        {
-            if (event->is<sf::Event::Closed>())
-                window.close();
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) window.close();
         }
-
-        // Move backgrounds
-        bg1.move({speed, 0.f});
-        bg2.move({speed, 0.f});
-
-        // Reset positions for endless effect
-        if (bg1.getPosition().x >= bgWidth)
-            bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
-
-        if (bg2.getPosition().x >= bgWidth)
-            bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
-
+        bg1.move({2.5f, 0.f}); bg2.move({2.5f, 0.f});
+        if (bg1.getPosition().x >= bgWidth) bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
+        if (bg2.getPosition().x >= bgWidth) bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
         window.clear();
-        window.draw(bg1);
-        window.draw(bg2);
+        window.draw(bg1); window.draw(bg2);
         window.display();
     }
-
     return 0;
 }
