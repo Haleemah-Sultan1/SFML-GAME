@@ -362,7 +362,7 @@ int main()
        { window.draw(*chsprite[i%28]);
         i++;}
 
-    if (!stop)window.display();
+       window.display();
     } 
  // Clean up dynamic memory
     for (int i = 0; i < 28; ++i)
