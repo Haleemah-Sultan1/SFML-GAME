@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
 using namespace sf;
 
 // Function to handle the Menu state
@@ -162,41 +161,6 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
         window.display();
     }
 }
-
-// animation array of players 
-void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character)
-{
-    for (int i = 0; i < 57; i++)
-    {
-        string filename = "assets/"+ character +"/";
-
-        if (i < 10) filename += "0";
-        filename += to_string(i) + "_"+character +"sheet2.png";
-
-        if (!chtexture[i]->loadFromFile(filename))
-            return;
-
-        chsprite[i] = new Sprite(*chtexture[i]);
-        chsprite[i]->setScale({-0.5f, 0.5f});
-        // if(i>30&&i<45)
-        // chsprite[i]->setPosition({1000.f, 345.f});
-        chsprite[i]->setPosition({1000.f, 350.f});
-    }
-    int c= 5; int k=0;int b =3;
-    for (int i = 30; i <= 42; i++)
-    {
-    chsprite[i]->setPosition({1000.f + b * k, 350.f - c * k});
-    k++;
-    }
-    for (int i = 43; i <= 55; i++)
-    {
-    k--;
-    chsprite[i]->setPosition({1000.f + b * k, 350.f - c * k});
-    }
-}
-
-
-
 int main()
 {
     sf::RenderWindow window(sf::VideoMode({1280, 720}), "Karachi Survival - SFML 3");
@@ -239,25 +203,6 @@ int main()
     float animationSpeed = 0.01f;    // how fast it animates
     float timer = 0.f;
 
-    ///////////// player sprite /////////////////////
-    Texture* chtexture[57];
-    Sprite* chsprite[57];
-    for (int i = 0; i < 57; i++)
-    {
-    chtexture[i] = new Texture; 
-    chsprite[i] = nullptr;
-   }
-   string character = "boy";
-    spritesfix(chtexture, chsprite, window,character);
- 
-    bool jump =false;
-    bool isOnGround =true;
-    int i=0;
-    int j=0;
-    Clock playeranimeclock;
-    float frameTimeplayer = 0.0175f;
-
-
     // --- GAME LOOP ---
    while (window.isOpen())
    {
@@ -266,20 +211,6 @@ int main()
     {
         if (event->is<Event::Closed>())
             window.close();
-
-                     // ESC key
-        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
-        {
-            if (key->code == sf::Keyboard::Key::Escape)
-            {
-                window.close();
-            }
-            //jumping of player 
-            if (key->code == sf::Keyboard::Key::Space && isOnGround)
-             {
-              isOnGround = false; jump = true;
-             }
-        }
     }
 
     // --- Delta time ---
@@ -308,40 +239,14 @@ int main()
     dog.setScale({1.0f, 1.0f}); // smaller dog
     dog.move({dogSpeed * deltaTime, 0.f});
 
-     
+
     // --- Draw everything ---
     window.clear();
     window.draw(bg1);
     window.draw(bg2);
     window.draw(dog);
-
-     //player sprite draw
-       if(j>28) {
-            jump =false;
-             j=0; 
-            isOnGround = true;
-         }   
-        if(jump)
-       { 
-       // for frame count  
-          if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer)
-          {
-            j++;
-            playeranimeclock.restart();
-          }
-         window.draw(*chsprite[27+j]);
-        }
-        else 
-       { window.draw(*chsprite[i%28]);
-        i++;}
-
     window.display();
     } 
-         // Clean up dynamic memory
-    for (int i = 0; i < 28; ++i)
-{
-    delete chsprite[i];
-    delete chtexture[i];
-}
+
     return 0;
 }
