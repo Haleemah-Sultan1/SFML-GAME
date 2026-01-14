@@ -362,7 +362,7 @@ int main()
        { window.draw(*chsprite[i%28]);
         i++;}
 
-    if (!stop)window.display();
+    window.display();
     } 
  // Clean up dynamic memory
     for (int i = 0; i < 28; ++i)
@@ -372,4 +372,3 @@ int main()
   }
     return 0;
 }
-//g++ main.cpp -o sfml-app -lsfml-graphics -lsfml-window -lsfml-system
