@@ -182,13 +182,13 @@ int main()
     Clock clock;  // SFML clock to get real deltaTime
 
     std::vector<sf::Texture> dogFrames;
-    int totalFrames = 25;
+    int totalFrames = 24;
     int dogSpeed=420.0f;
 
     for (int i = 1; i <= totalFrames; i++)
    {
     sf::Texture texture;
-    if (!texture.loadFromFile("assets/dog" + std::to_string(i) + ".png"))
+    if (!texture.loadFromFile("assets/dog/dog" + std::to_string(i) + ".png"))
         return -1;
 
     dogFrames.push_back(texture);
