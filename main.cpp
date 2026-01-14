@@ -161,7 +161,6 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
         window.display();
     }
 }
-
 int main()
 {
     sf::RenderWindow window(sf::VideoMode({1280, 720}), "Karachi Survival - SFML 3");
