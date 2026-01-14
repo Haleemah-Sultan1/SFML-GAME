@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "SFML3",
+            "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "includePath": [
+                "C:/msys64/ucrt64/include",
+                "${workspaceFolder}"
+            ],
+            "compilerArgs": ["-std=c++17"],  // ADD THIS LINE
+            "forcedInclude": []
+        }
+    ],
+    "version": 4
+}

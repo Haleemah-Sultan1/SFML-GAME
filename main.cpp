@@ -1,5 +1,10 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <SFML/System/Clock.hpp>
+#include <vector>
+#include <string>
+
+using namespace sf;
 
 // Function to handle the Menu state
 void menu(sf::RenderWindow& window, int& selectedPlayer)
@@ -7,6 +12,9 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
     // 1. Load Background and Font
     sf::Texture menuTexture;
     if (!menuTexture.loadFromFile("assets/menu.png")) return; 
+   if(! menuTexture.loadFromFile("assets/menu.png"))
+   return;
+
     sf::Sprite menuSprite(menuTexture);
     
     sf::Vector2u winSize = window.getSize();
@@ -171,16 +179,75 @@ int main()
     float bgWidth = (float)bgTexture.getSize().x;
     bg2.setPosition({-bgWidth, 0.f}); 
 
-    while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) window.close();
-        }
-        bg1.move({2.5f, 0.f}); bg2.move({2.5f, 0.f});
-        if (bg1.getPosition().x >= bgWidth) bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
-        if (bg2.getPosition().x >= bgWidth) bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
-        window.clear();
-        window.draw(bg1); window.draw(bg2);
-        window.display();
+    float speed = 180.0f;
+    Clock clock;  // SFML clock to get real deltaTime
+
+    std::vector<sf::Texture> dogFrames;
+    int totalFrames = 25;
+    int dogSpeed=420.0f;
+
+    for (int i = 1; i <= totalFrames; i++)
+   {
+    sf::Texture texture;
+    if (!texture.loadFromFile("assets/dog" + std::to_string(i) + ".png"))
+        return -1;
+
+    dogFrames.push_back(texture);
+   }
+   sf::Sprite dog(dogFrames[0]);
+   dog.setScale({0.6f, 0.6f});
+   dog.setPosition({90.f, 480.f});
+
+
+    int frame = 0;
+    float frameWidth = 119.f;       // width of a single frame
+    float animationSpeed = 0.01f;    // how fast it animates
+    float timer = 0.f;
+
+    // --- GAME LOOP ---
+   while (window.isOpen())
+   {
+    // --- Event handling ---
+    while (const std::optional event = window.pollEvent())
+    {
+        if (event->is<Event::Closed>())
+            window.close();
     }
+
+    // --- Delta time ---
+    float deltaTime = clock.restart().asSeconds();
+
+    // --- Update background ---
+    bg1.move({speed * deltaTime, 0.f});
+    bg2.move({speed * deltaTime, 0.f});
+    if (bg1.getPosition().x >= bgWidth)
+        bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
+    if (bg2.getPosition().x >= bgWidth)
+        bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
+
+    // --- Update dog movement ---
+        if (dog.getPosition().x > 1280.f)
+        dog.setPosition({-dog.getGlobalBounds().size.x, dog.getPosition().y});
+
+    // --- Update dog animation ---
+    timer += deltaTime;
+    if (timer >= animationSpeed)
+    {
+         timer = 0.f;
+        frame = (frame + 1) % totalFrames;
+        dog.setTexture(dogFrames[frame]); // 
+    }
+    dog.setScale({1.0f, 1.0f}); // smaller dog
+    dog.move({dogSpeed * deltaTime, 0.f});
+
+
+    // --- Draw everything ---
+    window.clear();
+    window.draw(bg1);
+    window.draw(bg2);
+    window.draw(dog);
+    window.display();
+    } 
+
     return 0;
 }
