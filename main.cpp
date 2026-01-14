@@ -3,10 +3,8 @@
 #include <SFML/System/Clock.hpp>
 #include <vector>
 #include <string>
-
 using namespace std;
 using namespace sf;
-
 // Function to handle the Menu state
 void menu(sf::RenderWindow& window, int& selectedPlayer)
 {
@@ -361,9 +359,13 @@ int main()
         else 
        { window.draw(*chsprite[i%28]);
         i++;}
+<<<<<<< HEAD
 
        window.display();
 
+=======
+       window.display();
+>>>>>>> 04e624ea0e6a7d0a5f9977a8de3fb73e05006595
     } 
  // Clean up dynamic memory
     for (int i = 0; i < 28; ++i)
