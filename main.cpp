@@ -36,7 +36,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
     }
 
     // Update, Collision, and Draw Logic
-    for (int i = 0; i < activePowerups.size(); ) {
+    for (int i = 0; i < (int)activePowerups.size(); ) {
         activePowerups[i].move({gameSpeed * deltaTime, 0.f});
 
         bool collected = false;
@@ -45,6 +45,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
             sf::FloatRect pBounds = playerSprite->getGlobalBounds();
             sf::FloatRect itemBounds = activePowerups[i].getGlobalBounds();
 
+            // Adjusted hitboxes for better feel
             sf::FloatRect playerHitbox;
             playerHitbox.size.x = pBounds.size.x * 0.4f;
             playerHitbox.size.y = pBounds.size.y * 0.4f;
@@ -98,11 +99,11 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
     
     p1Sprite.setPosition({410.f, 310.f});
     if (p1Tex.getSize().x > 0)
-        p1Sprite.setScale({180.f / p1Tex.getSize().x, 180.f / p1Tex.getSize().y});
+        p1Sprite.setScale({180.f / (float)p1Tex.getSize().x, 180.f / (float)p1Tex.getSize().y});
     
     p2Sprite.setPosition({690.f, 310.f});
     if (p2Tex.getSize().x > 0)
-        p2Sprite.setScale({180.f / p2Tex.getSize().x, 180.f / p2Tex.getSize().y});
+        p2Sprite.setScale({180.f / (float)p2Tex.getSize().x, 180.f / (float)p2Tex.getSize().y});
 
     credSprite.setPosition({750.f, 300.f}); 
     credSprite.setScale({1.2f, 1.2f});       
@@ -236,13 +237,13 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
     int c= 5; int k=0;int b =3;
     for (int i = 30; i <= 42; i++)
     {
-        if(chsprite[i]) chsprite[i]->setPosition({1000.f + b * k, 350.f - c * k});
+        if(chsprite[i]) chsprite[i]->setPosition({1000.f + (float)b * k, 350.f - (float)c * k});
         k++;
     }
     for (int i = 43; i <= 55; i++)
     {
         k--;
-        if(chsprite[i]) chsprite[i]->setPosition({1000.f + b * k, 350.f - c * k});
+        if(chsprite[i]) chsprite[i]->setPosition({1000.f + (float)b * k, 350.f - (float)c * k});
     }
 }
 
@@ -265,13 +266,13 @@ int main()
     scoreText.setFillColor(sf::Color(204, 153, 51)); // Yellowish Brown
     scoreText.setOutlineThickness(2);
     scoreText.setOutlineColor(sf::Color::Black);
-    scoreText.setPosition({1050.f, 20.f});
+    scoreText.setPosition({1000.f, 20.f});
 
     sf::Text lifeText(gameFont, "", 30);
     lifeText.setFillColor(sf::Color::Red);
     lifeText.setOutlineThickness(2);
     lifeText.setOutlineColor(sf::Color::Black);
-    lifeText.setPosition({1050.f, 60.f});
+    lifeText.setPosition({1000.f, 60.f});
 
     //Asset Loading
     if (!pwrTextures[0].loadFromFile("assets/samosa.png")) std::cout << "Samosa missing\n";
@@ -303,7 +304,7 @@ int main()
     dog.setPosition({90.f, 480.f});
 
     int frame = 0;
-    float animationSpeed = 0.01f;    
+    float animationSpeed = 0.05f;    
     float timer = 0.f;
 
     Texture* chtexture[86];
@@ -319,7 +320,7 @@ int main()
  
     bool jump = false;
     bool isOnGround = true;
-    int i = 0;
+    int i_run = 0;
     int j = 0;
     Clock playeranimeclock;
     float frameTimeplayer = 0.0175f;
@@ -337,7 +338,7 @@ int main()
             {
                 if (key->code == sf::Keyboard::Key::Escape) window.close();
                 if (key->code == sf::Keyboard::Key::Space && isOnGround) {
-                    isOnGround = false; jump = true;
+                    isOnGround = false; jump = true; j = 0;
                 }
                 if (key->code == sf::Keyboard::Key::D && isOnGround) dead = true;
             }
@@ -362,8 +363,7 @@ int main()
             frame = (frame + 1) % totalFrames;
             dog.setTexture(dogFrames[frame]); 
         }
-        dog.setScale({1.0f, 1.0f}); 
-        dog.move({dogSpeed * deltaTime, 0.f});
+        dog.move({(float)dogSpeed * deltaTime, 0.f});
 
         if(j > 28) {
             jump = false; j = 0; isOnGround = true;
@@ -376,10 +376,11 @@ int main()
 
         // Update UI Text Strings
         scoreText.setString("Score: " + std::to_string(score));
-       // lifeText.setString("Lives: " + std::to_string(life));
+        lifeText.setString("Lives: " + std::to_string(life));
 
-        //Determine Active Player Sprite
+        // Determine Active Player Sprite
         sf::Sprite* currentActiveSprite = nullptr;
+        
         if(dead) {
             if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer && d < 29) {
                 d++; playeranimeclock.restart();
@@ -391,22 +392,25 @@ int main()
             if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer) {
                 j++; playeranimeclock.restart();
             }
-            if (chsprite[27+j]) currentActiveSprite = chsprite[27+j];
+            if (j < 29 && chsprite[27+j]) currentActiveSprite = chsprite[27+j];
         }
         else { 
-            if (chsprite[i%28]) currentActiveSprite = chsprite[i%28];
-            i++;
+            // Running animation
+            if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer) {
+                i_run = (i_run + 1) % 28;
+                playeranimeclock.restart();
+            }
+            if (chsprite[i_run]) currentActiveSprite = chsprite[i_run];
         }
 
-        //Update and Draw Powerups
-        handlePowerups(window, deltaTime, speed, currentActiveSprite);
-  
-        if (currentActiveSprite) window.draw(*currentActiveSprite);
+        // Draw Player and Handle Powerups
+        if (currentActiveSprite) {
+            handlePowerups(window, deltaTime, speed, currentActiveSprite);
+            window.draw(*currentActiveSprite);
+        }
 
-        //Draw UI
         window.draw(scoreText);
         window.draw(lifeText);
-
         window.display();
     } 
 
