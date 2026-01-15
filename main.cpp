@@ -336,7 +336,7 @@ int main()
 
             if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
-                if (key->code == sf::Keyboard::Key::Escape) window.close();
+                if (key->code == sf::Keyboard::Key::Escape) window.close();  
                 if (key->code == sf::Keyboard::Key::Space && isOnGround) {
                     isOnGround = false; jump = true; j = 0;
                 }
