@@ -3,19 +3,86 @@
 #include <SFML/System/Clock.hpp>
 #include <vector>
 #include <string>
+#include <ctime>   
+
 using namespace std;
 using namespace sf;
-// Function to handle the Menu state
+
+// global variables
+int life = 3;
+int score = 0; 
+
+// POWERUP 
+std::vector<sf::Sprite> activePowerups;
+std::vector<int> activePowerupTypes; 
+sf::Texture pwrTextures[3]; 
+float spawnTimer = 0.0f;
+
+void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, sf::Sprite* playerSprite) {
+    // 1. Spawning Logic
+    spawnTimer += deltaTime;
+    if (spawnTimer >= 4.0f) {
+        spawnTimer = 0.0f;
+
+        int type = rand() % 3; 
+        sf::Sprite newPowerup(pwrTextures[type]);
+
+        float randomY = 400.f + (rand() % 100); 
+        newPowerup.setPosition({-100.f, randomY}); 
+        newPowerup.setScale({0.2f, 0.2f}); 
+
+        activePowerups.push_back(newPowerup);
+        activePowerupTypes.push_back(type); 
+    }
+
+    // Update, Collision, and Draw Logic
+    for (int i = 0; i < (int)activePowerups.size(); ) {
+        activePowerups[i].move({gameSpeed * deltaTime, 0.f});
+
+        bool collected = false;
+
+        if (playerSprite != nullptr) {
+            sf::FloatRect pBounds = playerSprite->getGlobalBounds();
+            sf::FloatRect itemBounds = activePowerups[i].getGlobalBounds();
+
+            // Adjusted hitboxes for better feel
+            sf::FloatRect playerHitbox;
+            playerHitbox.size.x = pBounds.size.x * 0.4f;
+            playerHitbox.size.y = pBounds.size.y * 0.4f;
+            playerHitbox.position.x = pBounds.position.x + (pBounds.size.x - playerHitbox.size.x) / 2.0f;
+            playerHitbox.position.y = pBounds.position.y + (pBounds.size.y - playerHitbox.size.y) / 2.0f;
+
+            sf::FloatRect itemHitbox;
+            itemHitbox.size.x = itemBounds.size.x * 0.6f;
+            itemHitbox.size.y = itemBounds.size.y * 0.6f;
+            itemHitbox.position.x = itemBounds.position.x + (itemBounds.size.x - itemHitbox.size.x) / 2.0f;
+            itemHitbox.position.y = itemBounds.position.y + (itemBounds.size.y - itemHitbox.size.y) / 2.0f;
+
+            if (playerHitbox.findIntersection(itemHitbox)) {
+                collected = true;
+                int type = activePowerupTypes[i];
+                if (type == 0) score += 20;      
+                else if (type == 1) score += 10; 
+                else if (type == 2) life += 1;   
+            }
+        }
+
+        if (collected || activePowerups[i].getPosition().x > 1300.f) {
+            activePowerups.erase(activePowerups.begin() + i);
+            activePowerupTypes.erase(activePowerupTypes.begin() + i);
+        } else {
+            window.draw(activePowerups[i]);
+            i++;
+        }
+    }
+}
+
 void menu(sf::RenderWindow& window, int& selectedPlayer)
 {
-    // 1. Load Background and Font
     sf::Texture menuTexture;
-    if (!menuTexture.loadFromFile("assets/menu.png")) return; 
-   if(! menuTexture.loadFromFile("assets/menu.png"))
-   return;
+    if (!menuTexture.loadFromFile("assets/menu.png")) return;
 
     sf::Sprite menuSprite(menuTexture);
-    
     sf::Vector2u winSize = window.getSize();
     sf::Vector2u texSize = menuTexture.getSize();
     menuSprite.setScale({ (float)winSize.x / texSize.x, (float)winSize.y / texSize.y });
@@ -30,25 +97,21 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
 
     sf::Sprite p1Sprite(p1Tex), p2Sprite(p2Tex), credSprite(credTex);
     
-    // Position Player Avatars
     p1Sprite.setPosition({410.f, 310.f});
     if (p1Tex.getSize().x > 0)
-        p1Sprite.setScale({180.f / p1Tex.getSize().x, 180.f / p1Tex.getSize().y});
+        p1Sprite.setScale({180.f / (float)p1Tex.getSize().x, 180.f / (float)p1Tex.getSize().y});
     
     p2Sprite.setPosition({690.f, 310.f});
     if (p2Tex.getSize().x > 0)
-        p2Sprite.setScale({180.f / p2Tex.getSize().x, 180.f / p2Tex.getSize().y});
+        p2Sprite.setScale({180.f / (float)p2Tex.getSize().x, 180.f / (float)p2Tex.getSize().y});
 
-    // Position and Size of Credit Picture
-    credSprite.setPosition({750.f, 300.f}); // Original spot
-    credSprite.setScale({1.2f, 1.2f});       // Made slightly larger than 1.0f
+    credSprite.setPosition({750.f, 300.f}); 
+    credSprite.setScale({1.2f, 1.2f});       
 
-    // COLORS
-    sf::Color yellowishBrown(204, 153, 51, 220); // Mustard yellow
-    sf::Color darkBrown(60, 40, 20);            // Dark brown outline/text
-    sf::Color instructionGrey(200, 200, 200);   // Darker off-white
+    sf::Color yellowishBrown(204, 153, 51, 220); 
+    sf::Color darkBrown(60, 40, 20);            
+    sf::Color instructionGrey(200, 200, 200);   
 
-    // BUTTONS SETUP
     sf::RectangleShape btnPlay({250.f, 50.f}), btnInst({250.f, 50.f}), btnCred({250.f, 50.f});
     btnPlay.setPosition({515.f, 300.f}); btnInst.setPosition({515.f, 370.f}); btnCred.setPosition({515.f, 440.f});
     
@@ -61,14 +124,13 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
     sf::Text txtInst(font, "INSTRUCTIONS", 25); txtInst.setFillColor(darkBrown); txtInst.setPosition({545.f, 380.f});
     sf::Text txtCred(font, "CREDITS", 25); txtCred.setFillColor(darkBrown); txtCred.setPosition({590.f, 450.f});
 
-    // Selection Boxes for Players
     sf::RectangleShape p1Box({200.f, 200.f}), p2Box({200.f, 200.f});
     p1Box.setPosition({400.f, 300.f}); p2Box.setPosition({680.f, 300.f});
     p1Box.setFillColor(sf::Color(255, 255, 255, 30));
     p2Box.setFillColor(sf::Color(255, 255, 255, 30));
     p1Box.setOutlineThickness(5); p2Box.setOutlineThickness(5);
 
-    int menuState = 0; // 0=Main, 1=Inst, 2=Cred, 3=PlayerSelect
+    int menuState = 0; 
     bool inMenu = true;
 
     while (inMenu && window.isOpen())
@@ -105,27 +167,24 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
         window.clear();
         window.draw(menuSprite);
 
-        if (menuState == 0) { // MAIN MENU 
+        if (menuState == 0) { 
             window.draw(btnPlay); window.draw(txtPlay);
             window.draw(btnInst); window.draw(txtInst);
             window.draw(btnCred); window.draw(txtCred);
         }
-        else if (menuState == 1) { // INSTRUCTIONS 
-            // Dark window background
+        else if (menuState == 1) { 
             sf::RectangleShape overlay({1100.f, 500.f});
             overlay.setPosition({90.f, 150.f});
-            overlay.setFillColor(sf::Color(0, 0, 0, 220)); // Very dark overlay
+            overlay.setFillColor(sf::Color(0, 0, 0, 220)); 
             overlay.setOutlineThickness(3);
             overlay.setOutlineColor(yellowishBrown);
             window.draw(overlay);
 
-            // Larger, yellowish title
             sf::Text instTitle(font, "Karachi Survival Guide:", 55);
             instTitle.setPosition({130.f, 180.f});
             instTitle.setFillColor(yellowishBrown);
             window.draw(instTitle);
 
-            // Darker white/grey body text
             sf::Text instBody(font, "1. Keep your phone hidden like it's a state secret.\n2. Trust the driver... but also pray quietly.\n3. If someone says \"bhai tension nahi leni\" - tension is guaranteed.\n4. If a road is empty, something is wrong.\n5. If it rains, cancel your plans, your hopes, and your shoes.", 28);
             instBody.setPosition({130.f, 290.f});
             instBody.setFillColor(instructionGrey);
@@ -135,22 +194,20 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
             backMsg.setPosition({550.f, 600.f});
             window.draw(backMsg);
         }
-        else if (menuState == 2) { // CREDITS
-            // Header moved to the left
+        else if (menuState == 2) { 
             sf::Text credHeader(font, "CREDITS:\nDeveloped by:", 50);
             credHeader.setPosition({150.f, 350.f}); 
             credHeader.setFillColor(yellowishBrown);
             window.draw(credHeader);
 
-            // Names at original spot
             sf::Text names(font, "Haleema Zuhaib\nSeerat Fatima\nHaiqa Shahid", 50);
             names.setPosition({450.f, 455.f}); 
             names.setFillColor(sf::Color::White);
             window.draw(names);
 
-            window.draw(credSprite); // Picture at original spot
+            window.draw(credSprite); 
         }
-        else if (menuState == 3) { //PLAYER SELECTION
+        else if (menuState == 3) { 
             sf::Text prompt(font, "SELECT PLAYER & PRESS ENTER", 30);
             prompt.setPosition({400.f, 150.f}); prompt.setFillColor(yellowishBrown);
             window.draw(prompt);
@@ -161,9 +218,13 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
     }
 }
 
+<<<<<<< HEAD
 
 // animation array of players 
 void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character, float y_postion, float chBaseY[])
+=======
+void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character)
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
 {
     for (int i = 0; i < 86; i++)
     {
@@ -173,15 +234,20 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
         filename += to_string(i) + "_"+character +"sheet2.png";
 
         if (!chtexture[i]->loadFromFile(filename))
-            return;
+            continue;
 
         chsprite[i] = new Sprite(*chtexture[i]);
         chsprite[i]->setScale({-0.5f, 0.5f});
+<<<<<<< HEAD
         chsprite[i]->setPosition({1000.f, y_postion});
+=======
+        chsprite[i]->setPosition({1000.f, 350.f});
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
     }
     int c= 5; int k=0;int b =3;
     for (int i = 30; i <= 42; i++)
     {
+<<<<<<< HEAD
     chsprite[i]->setPosition({1000.f + b * k, y_postion - c * k});
     k++;
     }
@@ -189,6 +255,15 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
     {
     k--;
     chsprite[i]->setPosition({1000.f + b * k, y_postion - c * k});
+=======
+        if(chsprite[i]) chsprite[i]->setPosition({1000.f + (float)b * k, 350.f - (float)c * k});
+        k++;
+    }
+    for (int i = 43; i <= 55; i++)
+    {
+        k--;
+        if(chsprite[i]) chsprite[i]->setPosition({1000.f + (float)b * k, 350.f - (float)c * k});
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
     }
     for (int i = 0; i < 86; i++) {
     if (chsprite[i] != nullptr) {
@@ -198,10 +273,9 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
 
 }
 
-
-
 int main()
 {
+    srand(static_cast<unsigned>(time(0))); 
     sf::RenderWindow window(sf::VideoMode({1280, 720}), "Karachi Survival - SFML 3");
     window.setFramerateLimit(60);
 
@@ -210,7 +284,27 @@ int main()
 
     if (!window.isOpen()) return 0;
 
-    // --- MAIN GAME LOOP ---
+    // UI Setup
+    sf::Font gameFont;
+    if (!gameFont.openFromFile("assets/font.ttf")) return -1;
+
+    sf::Text scoreText(gameFont, "", 30);
+    scoreText.setFillColor(sf::Color(204, 153, 51)); // Yellowish Brown
+    scoreText.setOutlineThickness(2);
+    scoreText.setOutlineColor(sf::Color::Black);
+    scoreText.setPosition({1000.f, 20.f});
+
+    sf::Text lifeText(gameFont, "", 30);
+    lifeText.setFillColor(sf::Color::Red);
+    lifeText.setOutlineThickness(2);
+    lifeText.setOutlineColor(sf::Color::Black);
+    lifeText.setPosition({1000.f, 60.f});
+
+    //Asset Loading
+    if (!pwrTextures[0].loadFromFile("assets/samosa.png")) std::cout << "Samosa missing\n";
+    if (!pwrTextures[1].loadFromFile("assets/tea.png"))    std::cout << "Tea missing\n";
+    if (!pwrTextures[2].loadFromFile("assets/flag.png"))   std::cout << "Flag missing\n";
+
     sf::Texture bgTexture;
     if (!bgTexture.loadFromFile("assets/gpt5.png")) return -1;
     sf::Sprite bg1(bgTexture), bg2(bgTexture);
@@ -218,38 +312,34 @@ int main()
     bg2.setPosition({-bgWidth, 0.f}); 
 
     float speed = 180.0f;
-    Clock clock;  // SFML clock to get real deltaTime
+    Clock clock;  
 
     std::vector<sf::Texture> dogFrames;
     int totalFrames = 24;
     int dogSpeed=420.0f;
 
     for (int i = 1; i <= totalFrames; i++)
-   {
-    sf::Texture texture;
-    if (!texture.loadFromFile("assets/dog/dog" + std::to_string(i) + ".png"))
-        return -1;
-
-    dogFrames.push_back(texture);
-   }
-   sf::Sprite dog(dogFrames[0]);
-   dog.setScale({0.6f, 0.6f});
-   dog.setPosition({90.f, 480.f});
-
+    {
+        sf::Texture texture;
+        if (!texture.loadFromFile("assets/dog/dog" + std::to_string(i) + ".png"))
+            return -1;
+        dogFrames.push_back(texture);
+    }
+    sf::Sprite dog(dogFrames[0]);
+    dog.setScale({0.6f, 0.6f});
+    dog.setPosition({90.f, 480.f});
 
     int frame = 0;
-    float frameWidth = 119.f;       // width of a single frame
-    float animationSpeed = 0.01f;    // how fast it animates
+    float animationSpeed = 0.05f;    
     float timer = 0.f;
 
-    
-    ///////////// player sprite /////////////////////
     Texture* chtexture[86];
     Sprite* chsprite[86];
     float y_postion = 350.f;
     float chBaseY[86];  // store the base Y positions
     for (int i = 0; i < 86; i++)
     {
+<<<<<<< HEAD
     chtexture[i] = new Texture; 
     chsprite[i] = nullptr;
    }
@@ -259,14 +349,23 @@ int main()
     else if(playerChoice==2)
      character ="girl";
     spritesfix(chtexture, chsprite, window,character, y_postion, chBaseY);
+=======
+        chtexture[i] = new Texture; 
+        chsprite[i] = nullptr;
+    }
+
+    string character = (playerChoice == 1) ? "boy" : "girl";
+    spritesfix(chtexture, chsprite, window, character);
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
  
-    bool jump =false;
-    bool isOnGround =true;
-    int i=0;
-    int j=0;
+    bool jump = false;
+    bool isOnGround = true;
+    int i_run = 0;
+    int j = 0;
     Clock playeranimeclock;
     float frameTimeplayer = 0.0175f;
     bool dead = false;
+<<<<<<< HEAD
     int d=0;
     bool stop = false;
     float distanceMeters = 0.f;// for player coverved distance 
@@ -279,32 +378,24 @@ int main()
     distancetext.setFillColor(Color(255, 204, 0));
     distancetext.setPosition({30.f,10.f});
 
+=======
+    int d = 0;
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
 
-    // --- GAME LOOP ---
-   while (window.isOpen())
-   {
-    // --- Event handling ---
-    while (const std::optional event = window.pollEvent())
+    while (window.isOpen())
     {
-        if (event->is<Event::Closed>())
-            window.close();
-
-         // ESC key
-        if (const auto* key = event->getIf<sf::Event::KeyPressed>())
+        while (const std::optional event = window.pollEvent())
         {
-            if (key->code == sf::Keyboard::Key::Escape)
-            {
+            if (event->is<Event::Closed>())
                 window.close();
-            }
-            //jumping of player 
-            if (key->code == sf::Keyboard::Key::Space && isOnGround)
-             {
-              isOnGround = false; jump = true;
-             }
 
-             if (key->code == sf::Keyboard::Key::D && isOnGround)
+            if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
-                 dead = true;
+                if (key->code == sf::Keyboard::Key::Escape) window.close();
+                if (key->code == sf::Keyboard::Key::Space && isOnGround) {
+                    isOnGround = false; jump = true; j = 0;
+                }
+                if (key->code == sf::Keyboard::Key::D && isOnGround) dead = true;
             }
             if (key->code == sf::Keyboard::Key::Down)
             {
@@ -319,8 +410,8 @@ int main()
                   chsprite[i]->setPosition({chsprite[i]->getPosition().x,chsprite[i]->getPosition().y-100.f});
             }
         }
-    }
 
+<<<<<<< HEAD
     // --- Delta time ---
     float deltaTime = clock.restart().asSeconds();
     if (!dead)// for measuring the distance covered
@@ -328,37 +419,34 @@ int main()
     distancetext.setString(
     "Distance: " + to_string(static_cast<int>(distanceMeters)) + " m" 
      );
+=======
+        float deltaTime = clock.restart().asSeconds();
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
 
-    // --- Update background ---
-    bg1.move({speed * deltaTime, 0.f});
-    bg2.move({speed * deltaTime, 0.f});
-    if (bg1.getPosition().x >= bgWidth)
-        bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
-    if (bg2.getPosition().x >= bgWidth)
-        bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
+        bg1.move({speed * deltaTime, 0.f});
+        bg2.move({speed * deltaTime, 0.f});
+        if (bg1.getPosition().x >= bgWidth)
+            bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
+        if (bg2.getPosition().x >= bgWidth)
+            bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
 
-    // --- Update dog movement ---
         if (dog.getPosition().x > 1280.f)
-        dog.setPosition({-dog.getGlobalBounds().size.x, dog.getPosition().y});
+            dog.setPosition({-dog.getGlobalBounds().size.x, dog.getPosition().y});
 
-    // --- Update dog animation ---
-    timer += deltaTime;
-    if (timer >= animationSpeed)
-    {
-         timer = 0.f;
-        frame = (frame + 1) % totalFrames;
-        dog.setTexture(dogFrames[frame]); // 
-    }
-    dog.setScale({1.0f, 1.0f}); // smaller dog
-    dog.move({dogSpeed * deltaTime, 0.f});
+        timer += deltaTime;
+        if (timer >= animationSpeed)
+        {
+            timer = 0.f;
+            frame = (frame + 1) % totalFrames;
+            dog.setTexture(dogFrames[frame]); 
+        }
+        dog.move({(float)dogSpeed * deltaTime, 0.f});
 
-      // player jumping to ground 
-       if(j>28) {
-            jump =false;
-             j=0; 
-            isOnGround = true;
-         }
+        if(j > 28) {
+            jump = false; j = 0; isOnGround = true;
+        }
  
+<<<<<<< HEAD
     // --- Draw everything ---
     window.clear();
     window.draw(bg1);
@@ -376,20 +464,28 @@ distancetext.setPosition({30.f, 10.f});
 window.draw(distancetext);
 
   
+=======
+        window.clear();
+        window.draw(bg1);
+        window.draw(bg2);
+        window.draw(dog);
+
+        // Update UI Text Strings
+        scoreText.setString("Score: " + std::to_string(score));
+        lifeText.setString("Lives: " + std::to_string(life));
+
+        // Determine Active Player Sprite
+        sf::Sprite* currentActiveSprite = nullptr;
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
         
-      //player sprite draw 
-        if(dead){
-           // for frame count  
-          if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer && d<29)
-          {
-            d++;
-            playeranimeclock.restart();
-          }
-          if(d<29)
-           window.draw(*chsprite[56+d]); 
-          else 
-          {window.draw(*chsprite[85]); stop =true;}
+        if(dead) {
+            if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer && d < 29) {
+                d++; playeranimeclock.restart();
+            }
+            if(d < 29 && chsprite[56+d]) currentActiveSprite = chsprite[56+d]; 
+            else if (chsprite[85]) currentActiveSprite = chsprite[85];
         }
+<<<<<<< HEAD
         else if(jump)
        { 
        // for frame count  
@@ -412,5 +508,38 @@ window.draw(distancetext);
     delete chsprite[i];
     delete chtexture[i];
   }
+=======
+        else if(jump) { 
+            if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer) {
+                j++; playeranimeclock.restart();
+            }
+            if (j < 29 && chsprite[27+j]) currentActiveSprite = chsprite[27+j];
+        }
+        else { 
+            // Running animation
+            if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer) {
+                i_run = (i_run + 1) % 28;
+                playeranimeclock.restart();
+            }
+            if (chsprite[i_run]) currentActiveSprite = chsprite[i_run];
+        }
+
+        // Draw Player and Handle Powerups
+        if (currentActiveSprite) {
+            handlePowerups(window, deltaTime, speed, currentActiveSprite);
+            window.draw(*currentActiveSprite);
+        }
+
+        window.draw(scoreText);
+        window.draw(lifeText);
+        window.display();
+    } 
+
+    for (int k = 0; k < 86; ++k)
+    {
+        delete chsprite[k];
+        delete chtexture[k];
+    }
+>>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
     return 0;
 }
