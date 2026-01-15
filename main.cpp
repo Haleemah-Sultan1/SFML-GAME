@@ -42,6 +42,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
         bool collected = false;
 
         if (playerSprite != nullptr) {
+            checkCollisions(currentActiveSprite, isOnGround, dog, dogActive, fruit, fruitActive, bus, busActive, somethingActive);
             sf::FloatRect pBounds = playerSprite->getGlobalBounds();
             sf::FloatRect itemBounds = activePowerups[i].getGlobalBounds();
 
@@ -76,7 +77,39 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
         }
     }
 }
+//collision part 2
+void checkCollisions(sf::Sprite* player, bool isOnGround, sf::Sprite& dog, bool& dogActive, sf::Sprite& fruit, bool& fruitActive, sf::Sprite& bus, bool& busActive, bool& somethingActive) {
+    if (player == nullptr) return;
 
+    // Get the player's world bounds
+    sf::FloatRect pBox = player->getGlobalBounds();
+
+    // Create a precision hitbox for the player
+    // We make it wider (1.0f of width) to ensure we don't miss fast-moving objects
+    sf::FloatRect pHitbox;
+    pHitbox.left = pBox.left; 
+    pHitbox.width = pBox.width;
+    pHitbox.top = pBox.top; 
+    pHitbox.height = 400.f; // Tall enough to reach the road
+
+    auto processHit = [&](sf::Sprite& obstacle, bool& active, string type) {
+        if (active) {
+            sf::FloatRect oBox = obstacle.getGlobalBounds();
+
+            // Check intersection
+            if (pHitbox.findIntersection(oBox)) {
+                life -= 1;               
+                active = false;          // Remove obstacle immediately
+                somethingActive = false; // Allow next spawn
+                std::cout << "Collision with " << type << "! Life: " << life << std::endl;
+            }
+        }
+    };
+
+    processHit(dog, dogActive, "Dog");
+    processHit(fruit, fruitActive, "Fruit");
+    processHit(bus, busActive, "Bus");
+}
 void menu(sf::RenderWindow& window, int& selectedPlayer)
 {
     sf::Texture menuTexture;
@@ -132,10 +165,7 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
 
     int menuState = 0; 
     bool inMenu = true;
-
     
-
-
     while (inMenu && window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -411,9 +441,6 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
             bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
         if (bg2.getPosition().x >= bgWidth)
             bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
-
-        
-
         timer += deltaTime;
         if (timer >= animationSpeed)
         {
@@ -475,6 +502,10 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
 
         // Draw Player and Handle Powerups
         if (currentActiveSprite) {
+
+    //checkCollisions(currentActiveSprite, isOnGround, dog, dogActive, fruit, fruitActive, bus, busActive, somethingActive);
+
+
             handlePowerups(window, deltaTime, speed, currentActiveSprite);
             window.draw(*currentActiveSprite);
         }
