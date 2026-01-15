@@ -133,6 +133,9 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
     int menuState = 0; 
     bool inMenu = true;
 
+    
+
+
     while (inMenu && window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -300,7 +303,7 @@ int main()
         dogFrames.push_back(texture);
     }
     sf::Sprite dog(dogFrames[0]);
-    dog.setScale({0.6f, 0.6f});
+    dog.setScale({0.9f, 0.9f});
     dog.setPosition({90.f, 480.f});
 
     int frame = 0;
@@ -326,6 +329,36 @@ int main()
     float frameTimeplayer = 0.0175f;
     bool dead = false;
     int d = 0;
+
+   bool somethingActive = false;
+
+bool dogActive = false;
+bool fruitActive = false;
+bool busActive = false;
+
+float spawnTimer = 0.f;
+float spawnDelay = 1.2f; // wait before trying to spawn again
+
+
+    //fruit truck 
+    sf::Texture fruitTexture; 
+    if (!fruitTexture.loadFromFile("assets/fruit/fruit.png")) return -1; 
+    sf::Sprite fruit(fruitTexture);
+     int fruitSpeed = 250.0f; 
+     frame = 0; 
+     float frameWidth = 119.f; // width of a single frame
+      animationSpeed = 0.01f; // how fast it animates 
+ fruit.setScale({0.3f, 0.3f});
+       fruit.setPosition({90.0f, 400.f});
+        //truck
+         sf::Texture busTexture;
+          if (!busTexture.loadFromFile("assets/bus.png")) return -1;
+           sf::Sprite bus(busTexture);
+            int busSpeed = 250.0f;
+             bus.setScale({0.5f, 0.5f});
+             bus.setScale({0.3f, 0.3f});
+bus.setOrigin({0.f, bus.getGlobalBounds().size.y});
+bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
 
     while (window.isOpen())
     {
@@ -353,8 +386,7 @@ int main()
         if (bg2.getPosition().x >= bgWidth)
             bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
 
-        if (dog.getPosition().x > 1280.f)
-            dog.setPosition({-dog.getGlobalBounds().size.x, dog.getPosition().y});
+        
 
         timer += deltaTime;
         if (timer >= animationSpeed)
@@ -409,6 +441,73 @@ int main()
             window.draw(*currentActiveSprite);
         }
 
+        spawnTimer += deltaTime;
+
+spawnTimer += deltaTime;
+
+if (!somethingActive && spawnTimer >= spawnDelay)
+{
+    spawnTimer = 0.f;
+    somethingActive = true;
+
+    int r = rand() % 3;
+
+    if (r == 0)
+    {
+        dogActive = true;
+        dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
+    }
+    else if (r == 1)
+    {
+        fruitActive = true;
+        fruit.setPosition({-fruit.getGlobalBounds().size.x, 400.f});
+    }
+    else
+    {
+        busActive = true;
+        bus.setPosition({-bus.getGlobalBounds().size.x, 350.f});
+    }
+}
+
+// DOG
+if (dogActive)
+{
+    dog.move({dogSpeed * deltaTime, 0.f});
+    if (dog.getPosition().x > 1280.f)
+    {
+        dogActive = false;
+        somethingActive = false;
+    }
+    window.draw(dog);
+}
+
+// FRUIT
+if (fruitActive)
+{
+    fruit.move({fruitSpeed * deltaTime, 0.f});
+    if (fruit.getPosition().x > 1280.f)
+    {
+        fruitActive = false;
+        somethingActive = false;
+    }
+    window.draw(fruit);
+}
+
+// BUS
+if (busActive)
+{
+    bus.move({busSpeed * deltaTime, 0.f});
+    if (bus.getPosition().x > 1280.f)
+    {
+        busActive = false;
+        somethingActive = false;
+    }
+    window.draw(bus);
+}
+
+if (dogActive) window.draw(dog); 
+if (fruitActive) window.draw(fruit);
+ if (busActive) window.draw(bus);
         window.draw(scoreText);
         window.draw(lifeText);
         window.display();
