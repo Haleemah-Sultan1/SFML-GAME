@@ -221,13 +221,7 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
     }
 }
 
-<<<<<<< HEAD
-
-// animation array of players 
-void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character, float y_postion, float chBaseY[])
-=======
 void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character)
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
 {
     for (int i = 0; i < 86; i++)
     {
@@ -241,24 +235,11 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
 
         chsprite[i] = new Sprite(*chtexture[i]);
         chsprite[i]->setScale({-0.5f, 0.5f});
-<<<<<<< HEAD
-        chsprite[i]->setPosition({1000.f, y_postion});
-=======
         chsprite[i]->setPosition({1000.f, 350.f});
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
     }
     int c= 5; int k=0;int b =3;
     for (int i = 30; i <= 42; i++)
     {
-<<<<<<< HEAD
-    chsprite[i]->setPosition({1000.f + b * k, y_postion - c * k});
-    k++;
-    }
-    for (int i = 43; i <= 55; i++)
-    {
-    k--;
-    chsprite[i]->setPosition({1000.f + b * k, y_postion - c * k});
-=======
         if(chsprite[i]) chsprite[i]->setPosition({1000.f + (float)b * k, 350.f - (float)c * k});
         k++;
     }
@@ -266,14 +247,7 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
     {
         k--;
         if(chsprite[i]) chsprite[i]->setPosition({1000.f + (float)b * k, 350.f - (float)c * k});
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
     }
-    for (int i = 0; i < 86; i++) {
-    if (chsprite[i] != nullptr) {
-        chBaseY[i] = chsprite[i]->getPosition().y;
-    }
-    }
-
 }
 
 int main()
@@ -338,42 +312,19 @@ int main()
 
     Texture* chtexture[86];
     Sprite* chsprite[86];
-    float y_postion = 350.f;
-    float chBaseY[86];  // store the base Y positions
     for (int i = 0; i < 86; i++)
     {
-<<<<<<< HEAD
-    chtexture[i] = new Texture; 
-    chsprite[i] = nullptr;
-   }
-   string character;
-   if(playerChoice==1)
-     character ="boy";
-    else if(playerChoice==2)
-     character ="girl";
-    spritesfix(chtexture, chsprite, window,character, y_postion, chBaseY);
-=======
         chtexture[i] = new Texture; 
         chsprite[i] = nullptr;
     }
 
     string character = (playerChoice == 1) ? "boy" : "girl";
     spritesfix(chtexture, chsprite, window, character);
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
  
-    bool jump = false;
-    bool isOnGround = true;
-    int i_run = 0;
-    int j = 0;
-    Clock playeranimeclock;
-    float frameTimeplayer = 0.0175f;
-    bool dead = false;
-<<<<<<< HEAD
-    int d=0;
-    bool stop = false;
-    float distanceMeters = 0.f;// for player coverved distance 
+    float distanceMeters = 0.f;// for player coverved distance
 
-    // player distance text 
+
+    // player distance text
     Font font;
     if (!font.openFromFile("assets/distancetext.ttf"))
     return -1;
@@ -381,9 +332,15 @@ int main()
     distancetext.setFillColor(Color(255, 204, 0));
     distancetext.setPosition({30.f,10.f});
 
-=======
+
+    bool jump = false;
+    bool isOnGround = true;
+    int i_run = 0;
+    int j = 0;
+    Clock playeranimeclock;
+    float frameTimeplayer = 0.0175f;
+    bool dead = false;
     int d = 0;
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
 
    bool somethingActive = false;
 
@@ -429,8 +386,8 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
                     isOnGround = false; jump = true; j = 0;
                 }
                 if (key->code == sf::Keyboard::Key::D && isOnGround) dead = true;
-            }
-            if (key->code == sf::Keyboard::Key::Down)
+
+                 if (key->code == sf::Keyboard::Key::Down)
             {
                 for (int i = 0; i < 86; i++)
                 if(chsprite[i]->getPosition().y <= 350.f && chsprite[i]->getPosition().y >= 290.f)
@@ -442,19 +399,11 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
                  if(chsprite[i]->getPosition().y <= 450.f && chsprite[i]->getPosition().y >= 390.f)
                   chsprite[i]->setPosition({chsprite[i]->getPosition().x,chsprite[i]->getPosition().y-100.f});
             }
+
+            }
         }
 
-<<<<<<< HEAD
-    // --- Delta time ---
-    float deltaTime = clock.restart().asSeconds();
-    if (!dead)// for measuring the distance covered
-      distanceMeters += speed * deltaTime;
-    distancetext.setString(
-    "Distance: " + to_string(static_cast<int>(distanceMeters)) + " m" 
-     );
-=======
         float deltaTime = clock.restart().asSeconds();
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
 
         bg1.move({speed * deltaTime, 0.f});
         bg2.move({speed * deltaTime, 0.f});
@@ -477,30 +426,26 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
         if(j > 28) {
             jump = false; j = 0; isOnGround = true;
         }
+        
  
-<<<<<<< HEAD
-    // --- Draw everything ---
-    window.clear();
-    window.draw(bg1);
-    window.draw(bg2);
-    window.draw(dog);
-        // Shadow
-distancetext.setFillColor(Color(60, 40, 20));
-distancetext.setPosition({30.f + 2, 10.f + 2});
-distancetext.setOutlineThickness(0.5);
-window.draw(distancetext);
-
-// Main text
-distancetext.setFillColor(Color(255, 204, 0));
-distancetext.setPosition({30.f, 10.f});
-window.draw(distancetext);
-
-  
-=======
         window.clear();
         window.draw(bg1);
         window.draw(bg2);
         window.draw(dog);
+
+        // distance counter 
+        distanceMeters += speed * deltaTime / 10.f; // adjust scale
+        distancetext.setString("Distance: " + std::to_string((int)distanceMeters) + "m");
+        // Shadow
+         distancetext.setFillColor(Color(60, 40, 2, 180));
+         distancetext.setPosition({30.f + 2, 10.f + 2});
+         distancetext.setOutlineThickness(0.5);
+         window.draw(distancetext);
+
+        // Main text
+        distancetext.setFillColor(Color(255, 204, 0));
+        distancetext.setPosition({30.f, 10.f});
+         window.draw(distancetext);
 
         // Update UI Text Strings
         scoreText.setString("Score: " + std::to_string(score));
@@ -508,7 +453,6 @@ window.draw(distancetext);
 
         // Determine Active Player Sprite
         sf::Sprite* currentActiveSprite = nullptr;
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
         
         if(dead) {
             if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer && d < 29) {
@@ -517,30 +461,6 @@ window.draw(distancetext);
             if(d < 29 && chsprite[56+d]) currentActiveSprite = chsprite[56+d]; 
             else if (chsprite[85]) currentActiveSprite = chsprite[85];
         }
-<<<<<<< HEAD
-        else if(jump)
-       { 
-       // for frame count  
-          if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer)
-          {
-            j++;
-            playeranimeclock.restart();
-          }
-
-         window.draw(*chsprite[27+j]);
-        }
-        else 
-       { window.draw(*chsprite[i%28]);
-        i++;}
-         window.display();
-       }
- // Clean up dynamic memory
-    for (int i = 0; i < 28; ++i)
-  {
-    delete chsprite[i];
-    delete chtexture[i];
-  }
-=======
         else if(jump) { 
             if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer) {
                 j++; playeranimeclock.restart();
@@ -639,6 +559,5 @@ if (fruitActive) window.draw(fruit);
         delete chsprite[k];
         delete chtexture[k];
     }
->>>>>>> 75059a7c07b2ba995694fde92d64627701bbf6c0
     return 0;
 }
