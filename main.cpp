@@ -469,10 +469,7 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
         }
         else { 
             // Running animation
-            if (playeranimeclock.getElapsedTime().asSeconds() >= frameTimeplayer) {
                 i_run = (i_run + 1) % 28;
-                playeranimeclock.restart();
-            }
             if (chsprite[i_run]) currentActiveSprite = chsprite[i_run];
         }
 
