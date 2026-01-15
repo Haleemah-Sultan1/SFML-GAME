@@ -163,7 +163,7 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
 
 
 // animation array of players 
-void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character)
+void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, string character, float y_postion, float chBaseY[])
 {
     for (int i = 0; i < 86; i++)
     {
@@ -177,21 +177,25 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
 
         chsprite[i] = new Sprite(*chtexture[i]);
         chsprite[i]->setScale({-0.5f, 0.5f});
-        // if(i>30&&i<45)
-        // chsprite[i]->setPosition({1000.f, 345.f});
-        chsprite[i]->setPosition({1000.f, 350.f});
+        chsprite[i]->setPosition({1000.f, y_postion});
     }
     int c= 5; int k=0;int b =3;
     for (int i = 30; i <= 42; i++)
     {
-    chsprite[i]->setPosition({1000.f + b * k, 350.f - c * k});
+    chsprite[i]->setPosition({1000.f + b * k, y_postion - c * k});
     k++;
     }
     for (int i = 43; i <= 55; i++)
     {
     k--;
-    chsprite[i]->setPosition({1000.f + b * k, 350.f - c * k});
+    chsprite[i]->setPosition({1000.f + b * k, y_postion - c * k});
     }
+    for (int i = 0; i < 86; i++) {
+    if (chsprite[i] != nullptr) {
+        chBaseY[i] = chsprite[i]->getPosition().y;
+    }
+    }
+
 }
 
 
@@ -242,6 +246,8 @@ int main()
     ///////////// player sprite /////////////////////
     Texture* chtexture[86];
     Sprite* chsprite[86];
+    float y_postion = 350.f;
+    float chBaseY[86];  // store the base Y positions
     for (int i = 0; i < 86; i++)
     {
     chtexture[i] = new Texture; 
@@ -252,7 +258,7 @@ int main()
      character ="boy";
     else if(playerChoice==2)
      character ="girl";
-    spritesfix(chtexture, chsprite, window,character);
+    spritesfix(chtexture, chsprite, window,character, y_postion, chBaseY);
  
     bool jump =false;
     bool isOnGround =true;
@@ -263,6 +269,16 @@ int main()
     bool dead = false;
     int d=0;
     bool stop = false;
+    float distanceMeters = 0.f;// for player coverved distance 
+
+    // player distance text 
+    Font font;
+    if (!font.openFromFile("assets/distancetext.ttf"))
+    return -1;
+    Text distancetext(font, "Distance: 0m", 36);
+    distancetext.setFillColor(Color(255, 204, 0));
+    distancetext.setPosition({30.f,10.f});
+
 
     // --- GAME LOOP ---
    while (window.isOpen())
@@ -290,11 +306,28 @@ int main()
             {
                  dead = true;
             }
+            if (key->code == sf::Keyboard::Key::Down)
+            {
+                for (int i = 0; i < 86; i++)
+                if(chsprite[i]->getPosition().y <= 350.f && chsprite[i]->getPosition().y >= 290.f)
+                  chsprite[i]->setPosition({chsprite[i]->getPosition().x, chsprite[i]->getPosition().y+100.f});
+            }
+             if (key->code == sf::Keyboard::Key::Up)
+            {
+                for (int i = 0; i < 86; i++)
+                 if(chsprite[i]->getPosition().y <= 450.f && chsprite[i]->getPosition().y >= 390.f)
+                  chsprite[i]->setPosition({chsprite[i]->getPosition().x,chsprite[i]->getPosition().y-100.f});
+            }
         }
     }
 
     // --- Delta time ---
     float deltaTime = clock.restart().asSeconds();
+    if (!dead)// for measuring the distance covered
+      distanceMeters += speed * deltaTime;
+    distancetext.setString(
+    "Distance: " + to_string(static_cast<int>(distanceMeters)) + " m" 
+     );
 
     // --- Update background ---
     bg1.move({speed * deltaTime, 0.f});
@@ -331,6 +364,17 @@ int main()
     window.draw(bg1);
     window.draw(bg2);
     window.draw(dog);
+        // Shadow
+distancetext.setFillColor(Color(60, 40, 20));
+distancetext.setPosition({30.f + 2, 10.f + 2});
+distancetext.setOutlineThickness(0.5);
+window.draw(distancetext);
+
+// Main text
+distancetext.setFillColor(Color(255, 204, 0));
+distancetext.setPosition({30.f, 10.f});
+window.draw(distancetext);
+
   
         
       //player sprite draw 
@@ -354,19 +398,14 @@ int main()
             j++;
             playeranimeclock.restart();
           }
+
          window.draw(*chsprite[27+j]);
         }
         else 
        { window.draw(*chsprite[i%28]);
         i++;}
-<<<<<<< HEAD
-
-       window.display();
-
-=======
-       window.display();
->>>>>>> 04e624ea0e6a7d0a5f9977a8de3fb73e05006595
-    } 
+         window.display();
+       }
  // Clean up dynamic memory
     for (int i = 0; i < 28; ++i)
   {
