@@ -3,7 +3,8 @@
 #include <SFML/System/Clock.hpp>
 #include <vector>
 #include <string>
-#include <ctime>   
+#include <ctime>  
+#include <algorithm> // for std::clamp 
 
 using namespace std;
 using namespace sf;
@@ -15,7 +16,9 @@ int score = 0;
 // POWERUP 
 std::vector<sf::Sprite> activePowerups;
 std::vector<int> activePowerupTypes; 
-sf::Texture pwrTextures[3]; 
+std::vector<int> activePowerupFrame;     // current frame
+std::vector<float> activePowerupTimer;  // animation timer
+sf::Texture pwrTextures[15]; 
 float spawnTimer = 0.0f;
 
 void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, sf::Sprite* playerSprite) {
@@ -24,20 +27,43 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
     if (spawnTimer >= 4.0f) {
         spawnTimer = 0.0f;
 
-        int type = rand() % 3; 
-        sf::Sprite newPowerup(pwrTextures[type]);
+        int type = rand() % 3; // type tells which sprite 
+        
+        sf::Sprite newPowerup(pwrTextures[type * 5]);
 
-        float randomY = 400.f + (rand() % 100); 
+        float randomY = 470.f + 100*(rand() % 2); // this will keep them on either up or down 
         newPowerup.setPosition({-100.f, randomY}); 
-        newPowerup.setScale({0.2f, 0.2f}); 
+        if(type==2){
+         newPowerup.setScale({0.6f, 0.6f}); 
+        newPowerup.setPosition({-100.f, randomY-10});
+        }
+         else
+        {newPowerup.setScale({0.2f, 0.2f}); 
+         newPowerup.setPosition({-100.f, randomY});
+         }
 
         activePowerups.push_back(newPowerup);
         activePowerupTypes.push_back(type); 
-    }
+        activePowerupFrame.push_back(0);
+        activePowerupTimer.push_back(0.f);
+    } 
 
     // Update, Collision, and Draw Logic
     for (int i = 0; i < (int)activePowerups.size(); ) {
+
         activePowerups[i].move({gameSpeed * deltaTime, 0.f});
+
+         // Animate sprite
+       activePowerupTimer[i] += deltaTime;
+       if (activePowerupTimer[i] >= 0.12f) {
+        activePowerupTimer[i] = 0.f;
+        activePowerupFrame[i] = (activePowerupFrame[i] + 1) % 5;  // 4 frames per powerup
+
+        int type = activePowerupTypes[i];
+        int textureIndex = type * 5 + activePowerupFrame[i];
+
+        activePowerups[i].setTexture(pwrTextures[textureIndex]);
+    }
 
         bool collected = false;
 
@@ -70,6 +96,9 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
         if (collected || activePowerups[i].getPosition().x > 1300.f) {
             activePowerups.erase(activePowerups.begin() + i);
             activePowerupTypes.erase(activePowerupTypes.begin() + i);
+            activePowerupFrame.erase(activePowerupFrame.begin() + i);
+            activePowerupTimer.erase(activePowerupTimer.begin() + i);
+
         } else {
             window.draw(activePowerups[i]);
             i++;
@@ -278,9 +307,12 @@ int main()
     lifeText.setPosition({1000.f, 60.f});
 
     //Asset Loading
-    if (!pwrTextures[0].loadFromFile("assets/samosa.png")) std::cout << "Samosa missing\n";
-    if (!pwrTextures[1].loadFromFile("assets/tea.png"))    std::cout << "Tea missing\n";
-    if (!pwrTextures[2].loadFromFile("assets/flag.png"))   std::cout << "Flag missing\n";
+    for(int i=0;i<5;i++)
+    if (!pwrTextures[i].loadFromFile("assets/samosa/0"+ to_string(i) +"_samosa.png")) std::cout << "Samosa missing\n";
+    for(int i = 5;i<10;i++)
+    if (!pwrTextures[i].loadFromFile("assets/tea/0"+ to_string(i-5) +"_tea.png"))    std::cout << "Tea missing\n";
+    for(int i=10;i<15;i++)
+    if (!pwrTextures[i].loadFromFile("assets/flag/0"+ to_string(i-10) +"_flag.png"))   std::cout << "Flag missing\n";
 
     sf::Texture bgTexture;
     if (!bgTexture.loadFromFile("assets/gpt5.png")) return -1;
@@ -371,6 +403,15 @@ float spawnDelay = 1.2f; // wait before trying to spawn again
              bus.setScale({0.3f, 0.3f});
 bus.setOrigin({0.f, bus.getGlobalBounds().size.y});
 bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
+
+    Texture* hearttexture[4] = {nullptr, nullptr, nullptr, nullptr};
+     Sprite*  heart[4]        = {nullptr, nullptr, nullptr, nullptr};
+    for(int i=0;i<4;i++){
+         hearttexture[i] = new Texture();  
+    if(!hearttexture[i]->loadFromFile("assets/heart/"+ to_string(i)+"_heart.png")) return -1;
+    heart[i] = new Sprite(*hearttexture[i]);
+    heart[i]->setScale({0.5f,0.5f});
+    heart[i]->setPosition({960.f,80.f});}
 
     while (window.isOpen())
     {
@@ -473,15 +514,12 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
             if (chsprite[i_run]) currentActiveSprite = chsprite[i_run];
         }
 
-        // Draw Player and Handle Powerups
-        if (currentActiveSprite) {
-            handlePowerups(window, deltaTime, speed, currentActiveSprite);
-            window.draw(*currentActiveSprite);
-        }
+        if(life>=3) window.draw(*heart[0]);
+        else window.draw(*heart[life]);
 
         spawnTimer += deltaTime;
 
-spawnTimer += deltaTime;
+        spawnTimer += deltaTime;
 
 if (!somethingActive && spawnTimer >= spawnDelay)
 {
@@ -546,6 +584,13 @@ if (busActive)
 if (dogActive) window.draw(dog); 
 if (fruitActive) window.draw(fruit);
  if (busActive) window.draw(bus);
+
+        // Draw Player and Handle Powerups
+        if (currentActiveSprite) {
+            handlePowerups(window, deltaTime, speed, currentActiveSprite);
+            window.draw(*currentActiveSprite);
+        }
+
         window.draw(scoreText);
         window.draw(lifeText);
         window.display();
@@ -556,5 +601,11 @@ if (fruitActive) window.draw(fruit);
         delete chsprite[k];
         delete chtexture[k];
     }
+    for (int i = 0; i < 4; i++)
+{
+    delete heart[i];
+    delete hearttexture[i];
+}
+
     return 0;
 }
