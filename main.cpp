@@ -368,9 +368,61 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
 }
 
 //scoreboard
-void scoreboard()
-{
+void scoreboard(sf::RenderWindow& window, int finalDistance,int score) {
+    sf::Font font;
+    if (!font.openFromFile("assets/font.ttf")) return;
 
+    sf::Text gameOverText(font, "GAME OVER", 80);
+    gameOverText.setFillColor(sf::Color::Red);
+    
+    sf::Text finalScoreText(font, "Distance Covered: " + std::to_string(finalDistance) + "m", 40);
+    sf::Text ScoreText(font, "SCORE: " + std::to_string(score), 40);
+    ScoreText.setFillColor(sf::Color::White);
+
+            
+
+
+    finalScoreText.setFillColor(sf::Color::White);
+
+    sf::Text restartText(font, "Press ESC to Exit", 20);
+    restartText.setFillColor(sf::Color(200, 200, 200));
+
+    // Center the text
+    auto centerText = [&](sf::Text& text, float yOffset) {
+        sf::FloatRect textRect = text.getLocalBounds();
+        text.setOrigin({textRect.size.x / 2.0f, textRect.size.y / 2.0f});
+        text.setPosition({window.getSize().x / 2.0f, (window.getSize().y / 2.0f) + yOffset});
+    };
+
+    centerText(gameOverText, -100.f);
+    centerText(finalScoreText, 20.f);
+    centerText(restartText, 150.f);
+
+    centerText(gameOverText, -100.f);
+    centerText(finalScoreText, 20.f);
+    centerText(ScoreText, 80.f);  
+    centerText(restartText, 150.f);
+
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
+                window.close();
+            }
+            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyPressed->code == sf::Keyboard::Key::Escape) {
+                    return; // Exit the function to close the game
+                }
+            }
+        }
+
+        window.clear(sf::Color::Black); // Black screen
+        window.draw(gameOverText);
+        window.draw(finalScoreText);
+        window.draw(restartText);
+        window.draw(ScoreText);
+        window.display();
+    }
 }
 int main()
 {
@@ -474,6 +526,7 @@ int main()
     float spawnTimer = 0.f;
     float spawnDelay = 1.2f; // wait before trying to spawn again
     int spawn_number =0;
+    bool exit=false;
 
     //fruit truck 
     sf::Texture fruitTexture; 
@@ -514,10 +567,11 @@ int main()
      dogSpeed   = dogSpeedBase;
      fruitSpeed = fruitSpeedBase;
      busSpeed   = busSpeedBase;
-
+     int lives=3;
 
     while (window.isOpen())
     {
+        
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
@@ -671,6 +725,8 @@ busSpeed   = busSpeedBase   * difficultyMultiplier;
         window.draw(scoreText);
         window.draw(lifeText);
         window.display();
+
+       if (life==0) scoreboard(window, distanceMeters, score );
     } 
 
     for (int k = 0; k < 86; ++k)
