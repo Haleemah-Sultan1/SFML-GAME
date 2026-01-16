@@ -317,6 +317,11 @@ void spritesfix(Texture* chtexture[], Sprite* chsprite[], RenderWindow& window, 
     }
 }
 
+//scoreboard
+void scoreboard()
+{
+
+}
 int main()
 {
     srand(static_cast<unsigned>(time(0))); 
@@ -636,5 +641,5 @@ int main()
 
     return 0;
 }
-.
+
 //~/Desktop/SFMLPROJECT/SFML-GAME
