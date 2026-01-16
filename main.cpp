@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <ctime>  
+#include<cmath>
 #include <optional>
 #include <algorithm> // for std::clamp 
 
@@ -108,43 +109,66 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
 }
 
 //collision part 2
-void checkCollisions(sf::Sprite* player, bool isOnGround, sf::Sprite& dog, bool& dogActive, sf::Sprite& fruit, bool& fruitActive, sf::Sprite& bus, bool& busActive, bool& somethingActive) {
-    if (player == nullptr || !isOnGround) return;  // Only check collisions when player is on ground
+void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, float deltaTime, sf::Sprite& dog, bool& dogActive, float dogSpeed, sf::Sprite& fruit, bool& fruitActive, float fruitSpeed, sf::Sprite& bus, bool& busActive, float busSpeed, bool& somethingActive) {
+    if (player == nullptr ) return;  // Only check collisions when player is on ground
 
-    // Get the player's world bounds
-    sf::FloatRect pBox = player->getGlobalBounds();
-
-    // Create a more reasonable hitbox for the player (not 400px tall)
-    sf::FloatRect pHitbox;
-    pHitbox.position.x = pBox.position.x + pBox.size.x * 0.2f;  // Shrink from sides
-    pHitbox.size.x = pBox.size.x * 0.6f;
-    pHitbox.position.y = pBox.position.y + pBox.size.y * 0.3f;  // Shrink from top
-    pHitbox.size.y = pBox.size.y * 0.7f;
-
-    auto processHit = [&](sf::Sprite& obstacle, bool& active, string type) {
-        if (active) {
-            sf::FloatRect oBox = obstacle.getGlobalBounds();
-            
-            // Shrink obstacle hitbox slightly too for fairness
-            sf::FloatRect oHitbox;
-            oHitbox.position.x = oBox.position.x + oBox.size.x * 0.1f;
-            oHitbox.size.x = oBox.size.x * 0.8f;
-            oHitbox.position.y = oBox.position.y + oBox.size.y * 0.1f;
-            oHitbox.size.y = oBox.size.y * 0.8f;
-
-            // Check intersection
-            if (pHitbox.findIntersection(oHitbox).has_value()) {
-                life -= 1;               
-                active = false;          // Remove obstacle immediately
-                somethingActive = false; // Allow next spawn
-                std::cout << "Collision with " << type << "! Life: " << life << std::endl;
+     // DOG
+        if (dogActive)
+        {
+            cout<<dog.getPosition().y<<endl;
+             dog.move({dogSpeed * deltaTime, 0.f});
+            if ((dog.getPosition().x >= 710.f &&dog.getPosition().x <=800.f )&& (dog.getPosition().y-130)  == player->getPosition().y)
+            {
+                
+                life -= 1;              
+                dogActive = false;
+                somethingActive = false;
             }
+            else if( dog.getPosition().x >= 1280.f)
+            {
+                dogActive = false;
+                somethingActive = false;
+            }
+            window.draw(dog);
         }
-    };
 
-    processHit(dog, dogActive, "Dog");
-    processHit(fruit, fruitActive, "Fruit");
-    processHit(bus, busActive, "Bus");
+        // FRUIT
+        if (fruitActive)
+        {
+            fruit.move({fruitSpeed * deltaTime, 0.f});
+            if ((fruit.getPosition().x >= 545.f && fruit.getPosition().x <= 800.f)&&  player->getPosition().y == 450.f)
+            {
+                life -= 1;              
+                fruitActive = false;
+                somethingActive = false;
+            }
+           else if (fruit.getPosition().x > 1280.f)
+            {
+                fruitActive = false;
+                somethingActive = false;
+            }
+            window.draw(fruit);
+        }
+
+        // BUS
+        if (busActive)
+        {
+            bus.move({busSpeed * deltaTime, 0.f});
+            if ((bus.getPosition().x >= 390.f && bus.getPosition().x <= 820.f) && 350.f==player->getPosition().y)
+            {
+                life -= 1;              
+                busActive = false;
+                somethingActive = false;
+            }
+            else if (bus.getPosition().x > 1280.f)
+            {
+                busActive = false;
+                somethingActive = false;
+            }
+            window.draw(bus);
+        }
+    
+
 }
 
 void menu(sf::RenderWindow& window, int& selectedPlayer)
@@ -278,11 +302,37 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
             window.draw(credSprite); 
         }
         else if (menuState == 3) { 
-            sf::Text prompt(font, "SELECT PLAYER & PRESS ENTER", 30);
-            prompt.setPosition({400.f, 150.f}); prompt.setFillColor(yellowishBrown);
+            sf::Text prompt(font, "SELECT PLAYER & PRESS ENTER", 34);
+            Text name_boy(font, "Ali",30);   
+            Text name_girl(font, "Ayesha",30);
+            Color darkBrown(60, 40, 20, 180);
+                      
+            
+            prompt.setFillColor(Color(60, 40, 2, 180));
+            prompt.setPosition({450.f, 150.f+2});
             window.draw(prompt);
+            prompt.setPosition({450.f, 150.f}); prompt.setFillColor(yellowishBrown);
+            window.draw(prompt);
+
             window.draw(p1Box); window.draw(p2Box);
             window.draw(p1Sprite); window.draw(p2Sprite); 
+            // ---- NAME SHADOWS ----
+            name_boy.setFillColor(darkBrown);
+            name_boy.setPosition({472.f, 502.f});
+            window.draw(name_boy);
+
+            name_girl.setFillColor(darkBrown);
+            name_girl.setPosition({752.f, 502.f});
+            window.draw(name_girl);
+
+            // ---- MAIN NAMES ----
+            name_boy.setFillColor(Color::White);
+            name_boy.setPosition({470.f, 500.f});
+            window.draw(name_boy);
+
+            name_girl.setFillColor(Color::White);
+            name_girl.setPosition({750.f, 500.f});
+            window.draw(name_girl);
         }
         window.display();
     }
@@ -423,6 +473,7 @@ int main()
 
     float spawnTimer = 0.f;
     float spawnDelay = 1.2f; // wait before trying to spawn again
+    int spawn_number =0;
 
     //fruit truck 
     sf::Texture fruitTexture; 
@@ -432,15 +483,15 @@ int main()
     frame = 0; 
     float frameWidth = 119.f; // width of a single frame
     animationSpeed = 0.01f; // how fast it animates 
-    fruit.setScale({0.3f, 0.3f});
-    fruit.setPosition({90.0f, 400.f});
+    fruit.setScale({0.25f, 0.25f});
+    fruit.setPosition({90.0f, 470.f});
     
     //truck
     sf::Texture busTexture;
     if (!busTexture.loadFromFile("assets/bus.png")) return -1;
     sf::Sprite bus(busTexture);
     float busSpeed = 250.0f;
-    bus.setScale({0.3f, 0.3f});
+    bus.setScale({0.4f, 0.4f});
     bus.setOrigin({0.f, bus.getGlobalBounds().size.y});
     bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
 
@@ -556,6 +607,8 @@ int main()
         // Spawning logic
         spawnTimer += deltaTime;
 
+
+        
         if (!somethingActive && spawnTimer >= spawnDelay)
         {
             spawnTimer = 0.f;
@@ -566,7 +619,7 @@ int main()
             if (r == 0)
             {
                 dogActive = true;
-                dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
+                dog.setPosition({-dog.getGlobalBounds().size.x, 480.f + 100*(rand()%2)});
             }
             else if (r == 1)
             {
@@ -580,47 +633,11 @@ int main()
             }
         }
 
-        // DOG
-        if (dogActive)
-        {
-            dog.move({dogSpeed * deltaTime, 0.f});
-            if (dog.getPosition().x > 1280.f)
-            {
-                dogActive = false;
-                somethingActive = false;
-            }
-            window.draw(dog);
-        }
-
-        // FRUIT
-        if (fruitActive)
-        {
-            fruit.move({fruitSpeed * deltaTime, 0.f});
-            if (fruit.getPosition().x > 1280.f)
-            {
-                fruitActive = false;
-                somethingActive = false;
-            }
-            window.draw(fruit);
-        }
-
-        // BUS
-        if (busActive)
-        {
-            bus.move({busSpeed * deltaTime, 0.f});
-            if (bus.getPosition().x > 1280.f)
-            {
-                busActive = false;
-                somethingActive = false;
-            }
-            window.draw(bus);
-        }
-
         // Draw Player and Handle Powerups
         if (currentActiveSprite) {
-            checkCollisions(currentActiveSprite, isOnGround, dog, dogActive, fruit, fruitActive, bus, busActive, somethingActive);
-            handlePowerups(window, deltaTime, speed, currentActiveSprite);
             window.draw(*currentActiveSprite);
+            checkCollisions(window,currentActiveSprite, isOnGround,deltaTime, dog, dogActive, dogSpeed, fruit, fruitActive, fruitSpeed, bus, busActive, busSpeed, somethingActive);
+            handlePowerups(window, deltaTime, speed, currentActiveSprite);
         }
 
         window.draw(scoreText);
