@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <ctime>  
+#include <optional>
 #include <algorithm> // for std::clamp 
 
 using namespace std;
@@ -19,13 +20,13 @@ std::vector<int> activePowerupTypes;
 std::vector<int> activePowerupFrame;     // current frame
 std::vector<float> activePowerupTimer;  // animation timer
 sf::Texture pwrTextures[15]; 
-float spawnTimer = 0.0f;
+float pwrspawnTimer = 0.0f;
 
 void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, sf::Sprite* playerSprite) {
     // 1. Spawning Logic
-    spawnTimer += deltaTime;
-    if (spawnTimer >= 4.0f) {
-        spawnTimer = 0.0f;
+    pwrspawnTimer += deltaTime;
+    if (pwrspawnTimer >= 4.0f) {
+        pwrspawnTimer = 0.0f;
 
         int type = rand() % 3; // type tells which sprite 
         
@@ -84,7 +85,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
             itemHitbox.position.x = itemBounds.position.x + (itemBounds.size.x - itemHitbox.size.x) / 2.0f;
             itemHitbox.position.y = itemBounds.position.y + (itemBounds.size.y - itemHitbox.size.y) / 2.0f;
 
-            if (playerHitbox.findIntersection(itemHitbox)) {
+            if (playerHitbox.findIntersection(itemHitbox).has_value()) {
                 collected = true;
                 int type = activePowerupTypes[i];
                 if (type == 0) score += 20;      
@@ -104,6 +105,46 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
             i++;
         }
     }
+}
+
+//collision part 2
+void checkCollisions(sf::Sprite* player, bool isOnGround, sf::Sprite& dog, bool& dogActive, sf::Sprite& fruit, bool& fruitActive, sf::Sprite& bus, bool& busActive, bool& somethingActive) {
+    if (player == nullptr || !isOnGround) return;  // Only check collisions when player is on ground
+
+    // Get the player's world bounds
+    sf::FloatRect pBox = player->getGlobalBounds();
+
+    // Create a more reasonable hitbox for the player (not 400px tall)
+    sf::FloatRect pHitbox;
+    pHitbox.position.x = pBox.position.x + pBox.size.x * 0.2f;  // Shrink from sides
+    pHitbox.size.x = pBox.size.x * 0.6f;
+    pHitbox.position.y = pBox.position.y + pBox.size.y * 0.3f;  // Shrink from top
+    pHitbox.size.y = pBox.size.y * 0.7f;
+
+    auto processHit = [&](sf::Sprite& obstacle, bool& active, string type) {
+        if (active) {
+            sf::FloatRect oBox = obstacle.getGlobalBounds();
+            
+            // Shrink obstacle hitbox slightly too for fairness
+            sf::FloatRect oHitbox;
+            oHitbox.position.x = oBox.position.x + oBox.size.x * 0.1f;
+            oHitbox.size.x = oBox.size.x * 0.8f;
+            oHitbox.position.y = oBox.position.y + oBox.size.y * 0.1f;
+            oHitbox.size.y = oBox.size.y * 0.8f;
+
+            // Check intersection
+            if (pHitbox.findIntersection(oHitbox).has_value()) {
+                life -= 1;               
+                active = false;          // Remove obstacle immediately
+                somethingActive = false; // Allow next spawn
+                std::cout << "Collision with " << type << "! Life: " << life << std::endl;
+            }
+        }
+    };
+
+    processHit(dog, dogActive, "Dog");
+    processHit(fruit, fruitActive, "Fruit");
+    processHit(bus, busActive, "Bus");
 }
 
 void menu(sf::RenderWindow& window, int& selectedPlayer)
@@ -161,10 +202,7 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
 
     int menuState = 0; 
     bool inMenu = true;
-
     
-
-
     while (inMenu && window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -325,7 +363,7 @@ int main()
 
     std::vector<sf::Texture> dogFrames;
     int totalFrames = 24;
-    int dogSpeed=420.0f;
+    float dogSpeed = 420.0f;
 
     for (int i = 1; i <= totalFrames; i++)
     {
@@ -353,17 +391,15 @@ int main()
     string character = (playerChoice == 1) ? "boy" : "girl";
     spritesfix(chtexture, chsprite, window, character);
  
-    float distanceMeters = 0.f;// for player coverved distance
-
+    float distanceMeters = 0.f;// for player covered distance
 
     // player distance text
     Font font;
     if (!font.openFromFile("assets/distancetext.ttf"))
-    return -1;
+        return -1;
     Text distancetext(font, "Distance: 0m", 36);
     distancetext.setFillColor(Color(255, 204, 0));
     distancetext.setPosition({30.f,10.f});
-
 
     bool jump = false;
     bool isOnGround = true;
@@ -374,35 +410,34 @@ int main()
     bool dead = false;
     int d = 0;
 
-   bool somethingActive = false;
+    bool somethingActive = false;
 
-bool dogActive = false;
-bool fruitActive = false;
-bool busActive = false;
+    bool dogActive = false;
+    bool fruitActive = false;
+    bool busActive = false;
 
-float spawnTimer = 0.f;
-float spawnDelay = 1.2f; // wait before trying to spawn again
-
+    float spawnTimer = 0.f;
+    float spawnDelay = 1.2f; // wait before trying to spawn again
 
     //fruit truck 
     sf::Texture fruitTexture; 
     if (!fruitTexture.loadFromFile("assets/fruit/fruit.png")) return -1; 
     sf::Sprite fruit(fruitTexture);
-     int fruitSpeed = 250.0f; 
-     frame = 0; 
-     float frameWidth = 119.f; // width of a single frame
-      animationSpeed = 0.01f; // how fast it animates 
- fruit.setScale({0.3f, 0.3f});
-       fruit.setPosition({90.0f, 400.f});
-        //truck
-         sf::Texture busTexture;
-          if (!busTexture.loadFromFile("assets/bus.png")) return -1;
-           sf::Sprite bus(busTexture);
-            int busSpeed = 250.0f;
-             bus.setScale({0.5f, 0.5f});
-             bus.setScale({0.3f, 0.3f});
-bus.setOrigin({0.f, bus.getGlobalBounds().size.y});
-bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
+    float fruitSpeed = 250.0f;
+    frame = 0; 
+    float frameWidth = 119.f; // width of a single frame
+    animationSpeed = 0.01f; // how fast it animates 
+    fruit.setScale({0.3f, 0.3f});
+    fruit.setPosition({90.0f, 400.f});
+    
+    //truck
+    sf::Texture busTexture;
+    if (!busTexture.loadFromFile("assets/bus.png")) return -1;
+    sf::Sprite bus(busTexture);
+    float busSpeed = 250.0f;
+    bus.setScale({0.3f, 0.3f});
+    bus.setOrigin({0.f, bus.getGlobalBounds().size.y});
+    bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
 
     Texture* hearttexture[4] = {nullptr, nullptr, nullptr, nullptr};
      Sprite*  heart[4]        = {nullptr, nullptr, nullptr, nullptr};
@@ -428,19 +463,18 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
                 }
                 if (key->code == sf::Keyboard::Key::D && isOnGround) dead = true;
 
-                 if (key->code == sf::Keyboard::Key::Down)
-            {
-                for (int i = 0; i < 86; i++)
-                if(chsprite[i]->getPosition().y <= 350.f && chsprite[i]->getPosition().y >= 290.f)
-                  chsprite[i]->setPosition({chsprite[i]->getPosition().x, chsprite[i]->getPosition().y+100.f});
-            }
-             if (key->code == sf::Keyboard::Key::Up)
-            {
-                for (int i = 0; i < 86; i++)
-                 if(chsprite[i]->getPosition().y <= 450.f && chsprite[i]->getPosition().y >= 390.f)
-                  chsprite[i]->setPosition({chsprite[i]->getPosition().x,chsprite[i]->getPosition().y-100.f});
-            }
-
+                if (key->code == sf::Keyboard::Key::Down)
+                {
+                    for (int i = 0; i < 86; i++)
+                        if(chsprite[i] && chsprite[i]->getPosition().y <= 350.f && chsprite[i]->getPosition().y >= 290.f)
+                            chsprite[i]->setPosition({chsprite[i]->getPosition().x, chsprite[i]->getPosition().y+100.f});
+                }
+                if (key->code == sf::Keyboard::Key::Up)
+                {
+                    for (int i = 0; i < 86; i++)
+                        if(chsprite[i] && chsprite[i]->getPosition().y <= 450.f && chsprite[i]->getPosition().y >= 390.f)
+                            chsprite[i]->setPosition({chsprite[i]->getPosition().x,chsprite[i]->getPosition().y-100.f});
+                }
             }
         }
 
@@ -452,9 +486,7 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
             bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
         if (bg2.getPosition().x >= bgWidth)
             bg2.setPosition({bg1.getPosition().x - bgWidth, 0.f});
-
         
-
         timer += deltaTime;
         if (timer >= animationSpeed)
         {
@@ -462,31 +494,28 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
             frame = (frame + 1) % totalFrames;
             dog.setTexture(dogFrames[frame]); 
         }
-        dog.move({(float)dogSpeed * deltaTime, 0.f});
-
+        
         if(j > 28) {
             jump = false; j = 0; isOnGround = true;
         }
-        
- 
+
         window.clear();
         window.draw(bg1);
         window.draw(bg2);
-        window.draw(dog);
 
         // distance counter 
         distanceMeters += speed * deltaTime / 10.f; // adjust scale
         distancetext.setString("Distance: " + std::to_string((int)distanceMeters) + "m");
         // Shadow
-         distancetext.setFillColor(Color(60, 40, 2, 180));
-         distancetext.setPosition({30.f + 2, 10.f + 2});
-         distancetext.setOutlineThickness(0.5);
-         window.draw(distancetext);
+        distancetext.setFillColor(Color(60, 40, 2, 180));
+        distancetext.setPosition({30.f + 2, 10.f + 2});
+        distancetext.setOutlineThickness(0.5);
+        window.draw(distancetext);
 
         // Main text
         distancetext.setFillColor(Color(255, 204, 0));
         distancetext.setPosition({30.f, 10.f});
-         window.draw(distancetext);
+        window.draw(distancetext);
 
         // Update UI Text Strings
         scoreText.setString("Score: " + std::to_string(score));
@@ -510,83 +539,79 @@ bus.setPosition({-bus.getGlobalBounds().size.x, 520.f});
         }
         else { 
             // Running animation
-                i_run = (i_run + 1) % 28;
+            i_run = (i_run + 1) % 28;
             if (chsprite[i_run]) currentActiveSprite = chsprite[i_run];
         }
 
         if(life>=3) window.draw(*heart[0]);
         else window.draw(*heart[life]);
 
+        // Spawning logic
         spawnTimer += deltaTime;
 
-        spawnTimer += deltaTime;
+        if (!somethingActive && spawnTimer >= spawnDelay)
+        {
+            spawnTimer = 0.f;
+            somethingActive = true;
 
-if (!somethingActive && spawnTimer >= spawnDelay)
-{
-    spawnTimer = 0.f;
-    somethingActive = true;
+            int r = rand() % 3;
 
-    int r = rand() % 3;
+            if (r == 0)
+            {
+                dogActive = true;
+                dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
+            }
+            else if (r == 1)
+            {
+                fruitActive = true;
+                fruit.setPosition({-fruit.getGlobalBounds().size.x, 400.f});
+            }
+            else
+            {
+                busActive = true;
+                bus.setPosition({-bus.getGlobalBounds().size.x, 350.f});
+            }
+        }
 
-    if (r == 0)
-    {
-        dogActive = true;
-        dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
-    }
-    else if (r == 1)
-    {
-        fruitActive = true;
-        fruit.setPosition({-fruit.getGlobalBounds().size.x, 400.f});
-    }
-    else
-    {
-        busActive = true;
-        bus.setPosition({-bus.getGlobalBounds().size.x, 350.f});
-    }
-}
+        // DOG
+        if (dogActive)
+        {
+            dog.move({dogSpeed * deltaTime, 0.f});
+            if (dog.getPosition().x > 1280.f)
+            {
+                dogActive = false;
+                somethingActive = false;
+            }
+            window.draw(dog);
+        }
 
-// DOG
-if (dogActive)
-{
-    dog.move({dogSpeed * deltaTime, 0.f});
-    if (dog.getPosition().x > 1280.f)
-    {
-        dogActive = false;
-        somethingActive = false;
-    }
-    window.draw(dog);
-}
+        // FRUIT
+        if (fruitActive)
+        {
+            fruit.move({fruitSpeed * deltaTime, 0.f});
+            if (fruit.getPosition().x > 1280.f)
+            {
+                fruitActive = false;
+                somethingActive = false;
+            }
+            window.draw(fruit);
+        }
 
-// FRUIT
-if (fruitActive)
-{
-    fruit.move({fruitSpeed * deltaTime, 0.f});
-    if (fruit.getPosition().x > 1280.f)
-    {
-        fruitActive = false;
-        somethingActive = false;
-    }
-    window.draw(fruit);
-}
-
-// BUS
-if (busActive)
-{
-    bus.move({busSpeed * deltaTime, 0.f});
-    if (bus.getPosition().x > 1280.f)
-    {
-        busActive = false;
-        somethingActive = false;
-    }
-    window.draw(bus);
-}
-
-if (dogActive) window.draw(dog); 
-if (fruitActive) window.draw(fruit);
- if (busActive) window.draw(bus);
+        // BUS
+        if (busActive)
+        {
+            bus.move({busSpeed * deltaTime, 0.f});
+            if (bus.getPosition().x > 1280.f)
+            {
+                busActive = false;
+                somethingActive = false;
+            }
+            window.draw(bus);
+        }
 
         // Draw Player and Handle Powerups
         if (currentActiveSprite) {
+            checkCollisions(currentActiveSprite, isOnGround, dog, dogActive, fruit, fruitActive, bus, busActive, somethingActive);
             handlePowerups(window, deltaTime, speed, currentActiveSprite);
             window.draw(*currentActiveSprite);
         }
