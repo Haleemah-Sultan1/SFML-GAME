@@ -20,10 +20,11 @@ std::vector<sf::Sprite> activePowerups;
 std::vector<int> activePowerupTypes; 
 std::vector<int> activePowerupFrame;     // current frame
 std::vector<float> activePowerupTimer;  // animation timer
+std::vector<bool>activePowerupPostion_up;
 sf::Texture pwrTextures[15]; 
 float pwrspawnTimer = 0.0f;
 
-void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, sf::Sprite* playerSprite) {
+void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, sf::Sprite* playerSprite, bool playerup ) {
     // 1. Spawning Logic
     pwrspawnTimer += deltaTime;
     if (pwrspawnTimer >= 4.0f) {
@@ -33,8 +34,14 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
         
         sf::Sprite newPowerup(pwrTextures[type * 5]);
 
-        float randomY = 470.f + 100*(rand() % 2); // this will keep them on either up or down 
-        newPowerup.setPosition({-100.f, randomY}); 
+        int c =rand() % 2;
+        float randomY = 470.f + 100*(c); // this will keep them on either up or down 
+        
+        if(c==0)
+           activePowerupPostion_up.push_back(true);
+        else 
+         activePowerupPostion_up.push_back(false);
+
         if(type==2){
          newPowerup.setScale({0.6f, 0.6f}); 
         newPowerup.setPosition({-100.f, randomY-10});
@@ -43,7 +50,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
         {newPowerup.setScale({0.2f, 0.2f}); 
          newPowerup.setPosition({-100.f, randomY});
          }
-
+        
         activePowerups.push_back(newPowerup);
         activePowerupTypes.push_back(type); 
         activePowerupFrame.push_back(0);
@@ -70,29 +77,31 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
         bool collected = false;
 
         if (playerSprite != nullptr) {
-            sf::FloatRect pBounds = playerSprite->getGlobalBounds();
-            sf::FloatRect itemBounds = activePowerups[i].getGlobalBounds();
+           
 
-            // Adjusted hitboxes for better feel
-            sf::FloatRect playerHitbox;
-            playerHitbox.size.x = pBounds.size.x * 0.4f;
-            playerHitbox.size.y = pBounds.size.y * 0.4f;
-            playerHitbox.position.x = pBounds.position.x + (pBounds.size.x - playerHitbox.size.x) / 2.0f;
-            playerHitbox.position.y = pBounds.position.y + (pBounds.size.y - playerHitbox.size.y) / 2.0f;
+        bool sameLane = (playerup == activePowerupPostion_up[i] )? true: false;
+        // int diff_x = abs(activePowerups[i].getPosition().x - playerSprite->getPosition().x);
+        // bool hitx = diff_x<50.f;
+        float playerCenterX =
+        playerSprite->getPosition().x +
+        playerSprite->getGlobalBounds().size.x * 0.5f;
 
-            sf::FloatRect itemHitbox;
-            itemHitbox.size.x = itemBounds.size.x * 0.6f;
-            itemHitbox.size.y = itemBounds.size.y * 0.6f;
-            itemHitbox.position.x = itemBounds.position.x + (itemBounds.size.x - itemHitbox.size.x) / 2.0f;
-            itemHitbox.position.y = itemBounds.position.y + (itemBounds.size.y - itemHitbox.size.y) / 2.0f;
+        float powerupCenterX =
+          activePowerups[i].getPosition().x +
+          activePowerups[i].getGlobalBounds().size.x * 0.5f;
 
-            if (playerHitbox.findIntersection(itemHitbox).has_value()) {
-                collected = true;
-                int type = activePowerupTypes[i];
-                if (type == 0) score += 20;      
-                else if (type == 1) score += 10; 
-                else if (type == 2) life += 1;   
+        float dx = std::abs(powerupCenterX - playerCenterX +360);
+
+        bool hitx = dx < 50.f;
+
+             if ( sameLane && hitx) {
+             collected = true;
+              int type = activePowerupTypes[i];
+              if (type == 0) score += 20;
+             else if (type == 1) score += 10;
+            else if (type == 2) {life += 1;if (life>3) life = 3;}
             }
+
         }
 
         if (collected || activePowerups[i].getPosition().x > 1300.f) {
@@ -100,6 +109,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
             activePowerupTypes.erase(activePowerupTypes.begin() + i);
             activePowerupFrame.erase(activePowerupFrame.begin() + i);
             activePowerupTimer.erase(activePowerupTimer.begin() + i);
+            activePowerupPostion_up.erase(activePowerupPostion_up.begin() + i);
 
         } else {
             window.draw(activePowerups[i]);
@@ -109,13 +119,12 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
 }
 
 //collision part 2
-void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, float deltaTime, sf::Sprite& dog, bool& dogActive, float dogSpeed, sf::Sprite& fruit, bool& fruitActive, float fruitSpeed, sf::Sprite& bus, bool& busActive, float busSpeed, bool& somethingActive) {
+void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, float deltaTime, sf::Sprite& dog, bool& dogActive, float dogSpeed, sf::Sprite& fruit, bool& fruitActive, float fruitSpeed, sf::Sprite& bus, bool& busActive, float busSpeed, bool& somethingActive, bool& bushalfcross, bool& fruithalfcross) {
     if (player == nullptr ) return;  // Only check collisions when player is on ground
 
      // DOG
         if (dogActive)
         {
-            cout<<dog.getPosition().y<<endl;
              dog.move({dogSpeed * deltaTime, 0.f});
             if ((dog.getPosition().x >= 710.f &&dog.getPosition().x <=800.f )&& (dog.getPosition().y-130)  == player->getPosition().y)
             {
@@ -146,8 +155,11 @@ void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, 
             {
                 fruitActive = false;
                 somethingActive = false;
+                 fruithalfcross = true;
             }
             window.draw(fruit);
+            if(fruit.getPosition().x >= 400.f)
+             fruithalfcross = true;
         }
 
         // BUS
@@ -164,8 +176,11 @@ void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, 
             {
                 busActive = false;
                 somethingActive = false;
+                 bushalfcross = true;
             }
             window.draw(bus);
+            if(bus.getPosition().x >= 300.f)
+            bushalfcross = true;
         }
     
 
@@ -464,6 +479,7 @@ int main()
     float frameTimeplayer = 0.0175f;
     bool dead = false;
     int d = 0;
+    bool playerup = true;
 
     bool somethingActive = false;
 
@@ -472,8 +488,9 @@ int main()
     bool busActive = false;
 
     float spawnTimer = 0.f;
-    float spawnDelay = 1.2f; // wait before trying to spawn again
-    int spawn_number =0;
+    float spawnDelay = 2.2f; // wait before trying to spawn again
+    bool bushalfcrossed = true;
+    bool fruithalfcrossed = false;
 
     //fruit truck 
     sf::Texture fruitTexture; 
@@ -502,7 +519,7 @@ int main()
     if(!hearttexture[i]->loadFromFile("assets/heart/"+ to_string(i)+"_heart.png")) return -1;
     heart[i] = new Sprite(*hearttexture[i]);
     heart[i]->setScale({0.5f,0.5f});
-    heart[i]->setPosition({960.f,80.f});}
+    heart[i]->setPosition({960.f,50.f});}
 
     while (window.isOpen())
     {
@@ -521,12 +538,14 @@ int main()
 
                 if (key->code == sf::Keyboard::Key::Down)
                 {
+                    playerup = false;
                     for (int i = 0; i < 86; i++)
                         if(chsprite[i] && chsprite[i]->getPosition().y <= 350.f && chsprite[i]->getPosition().y >= 290.f)
                             chsprite[i]->setPosition({chsprite[i]->getPosition().x, chsprite[i]->getPosition().y+100.f});
                 }
                 if (key->code == sf::Keyboard::Key::Up)
                 {
+                    playerup = true;
                     for (int i = 0; i < 86; i++)
                         if(chsprite[i] && chsprite[i]->getPosition().y <= 450.f && chsprite[i]->getPosition().y >= 390.f)
                             chsprite[i]->setPosition({chsprite[i]->getPosition().x,chsprite[i]->getPosition().y-100.f});
@@ -575,7 +594,7 @@ int main()
 
         // Update UI Text Strings
         scoreText.setString("Score: " + std::to_string(score));
-        lifeText.setString("Lives: " + std::to_string(life));
+        // lifeText.setString("Lives: " + std::to_string(life));
 
         // Determine Active Player Sprite
         sf::Sprite* currentActiveSprite = nullptr;
@@ -604,40 +623,70 @@ int main()
         else if(life==1) window.draw(*heart[2]);
         else window.draw(*heart[3]);
 
-        // Spawning logic
+
         spawnTimer += deltaTime;
 
+if (spawnTimer >= spawnDelay)
+{
+    spawnTimer = 0.f;
 
-        
-        if (!somethingActive && spawnTimer >= spawnDelay)
-        {
-            spawnTimer = 0.f;
-            somethingActive = true;
+    int r = rand() % 3;
 
-            int r = rand() % 3;
+    if (r == 0 && !dogActive)
+    {
+        dogActive = true;
+       dog.setPosition({-dog.getGlobalBounds().size.x, 480.f + 100*(rand()%2)});
+    }
+    else if (r == 1 && !fruitActive)
+    {
+        fruitActive = true;
+        fruit.setPosition({-fruit.getGlobalBounds().size.x, 400.f});
+    }
+    else if (r == 2 && !busActive && distanceMeters>=100.f)
+    {
+        busActive = true;
+        bus.setPosition({-bus.getGlobalBounds().size.x, 350.f});
+    }
+    else 
+     {
+        dogActive = true;
+        dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
+    }
+}
+if (spawnTimer >= spawnDelay &&(distanceMeters>=120) )
+{
+    spawnTimer = 0.f;
 
-            if (r == 0)
-            {
-                dogActive = true;
-                dog.setPosition({-dog.getGlobalBounds().size.x, 480.f + 100*(rand()%2)});
-            }
-            else if (r == 1)
-            {
-                fruitActive = true;
-                fruit.setPosition({-fruit.getGlobalBounds().size.x, 400.f});
-            }
-            else
-            {
-                busActive = true;
-                bus.setPosition({-bus.getGlobalBounds().size.x, 350.f});
-            }
-        }
+    int r = rand() % 3;
+
+    if (r == 0 && !dogActive)
+    {
+        dogActive = true;
+       dog.setPosition({-dog.getGlobalBounds().size.x, 480.f + 100*(rand()%2)});
+    }
+    else if (r == 1 && !fruitActive)
+    {
+        fruitActive = true;
+        fruit.setPosition({-fruit.getGlobalBounds().size.x, 400.f});
+    }
+    else if (r == 2 && !busActive && distanceMeters>=100.f)
+    {
+        busActive = true;
+        bus.setPosition({-bus.getGlobalBounds().size.x, 350.f});
+    }
+    else 
+     {
+        dogActive = true;
+        dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
+    }
+}
 
         // Draw Player and Handle Powerups
         if (currentActiveSprite) {
             window.draw(*currentActiveSprite);
-            checkCollisions(window,currentActiveSprite, isOnGround,deltaTime, dog, dogActive, dogSpeed, fruit, fruitActive, fruitSpeed, bus, busActive, busSpeed, somethingActive);
-            handlePowerups(window, deltaTime, speed, currentActiveSprite);
+            handlePowerups(window, deltaTime, speed, currentActiveSprite, playerup);
+            checkCollisions(window,currentActiveSprite, isOnGround,deltaTime, dog, dogActive, dogSpeed, fruit, fruitActive, fruitSpeed, bus, busActive, busSpeed, somethingActive, bushalfcrossed, fruithalfcrossed);
+            
         }
 
         window.draw(scoreText);
