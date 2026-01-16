@@ -544,7 +544,9 @@ int main()
         }
 
         if(life>=3) window.draw(*heart[0]);
-        else window.draw(*heart[life]);
+       else if(life==2) window.draw(*heart[1]);
+        else if(life==1) window.draw(*heart[2]);
+        else window.draw(*heart[3]);
 
         // Spawning logic
         spawnTimer += deltaTime;
