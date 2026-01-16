@@ -504,6 +504,18 @@ int main()
     heart[i]->setScale({0.5f,0.5f});
     heart[i]->setPosition({960.f,80.f});}
 
+    //HALEEEMA LAST CDEEEE
+
+    float dogSpeedBase   = 420.0f;
+    float fruitSpeedBase = 250.0f;
+    float busSpeedBase   = 250.0f;
+
+    // actual speeds used
+     dogSpeed   = dogSpeedBase;
+     fruitSpeed = fruitSpeedBase;
+     busSpeed   = busSpeedBase;
+
+
     while (window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -561,6 +573,22 @@ int main()
 
         // distance counter 
         distanceMeters += speed * deltaTime / 10.f; // adjust scale
+
+        // ---- Difficulty scaling based on distance ----
+float difficultyMultiplier = 1.0f;
+
+// every 200 meters → +10% speed
+difficultyMultiplier += (distanceMeters / 200.f) * 0.10f;
+
+// cap difficulty so it doesn’t become insane
+difficultyMultiplier = std::clamp(difficultyMultiplier, 1.0f, 2.2f);
+
+// apply scaled speeds
+dogSpeed   = dogSpeedBase   * difficultyMultiplier;
+fruitSpeed = fruitSpeedBase * difficultyMultiplier;
+busSpeed   = busSpeedBase   * difficultyMultiplier;
+
+
         distancetext.setString("Distance: " + std::to_string((int)distanceMeters) + "m");
         // Shadow
         distancetext.setFillColor(Color(60, 40, 2, 180));
