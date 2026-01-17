@@ -119,7 +119,7 @@ void handlePowerups(sf::RenderWindow& window, float deltaTime, float gameSpeed, 
 }
 
 //collision part 2
-void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, float deltaTime, sf::Sprite& dog, bool& dogActive, float dogSpeed, sf::Sprite& fruit, bool& fruitActive, float fruitSpeed, sf::Sprite& bus, bool& busActive, float busSpeed, bool& somethingActive, bool& bushalfcross, bool& fruithalfcross) {
+void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, float deltaTime, sf::Sprite& dog, bool& dogActive, float dogSpeed, sf::Sprite& fruit, bool& fruitActive, float fruitSpeed, sf::Sprite& bus, bool& busActive, float busSpeed, bool& somethingActive, bool& playerInvincible , float& invincibleTimer) {
     if (player == nullptr ) return;  // Only check collisions when player is on ground
 
      // DOG
@@ -129,7 +129,11 @@ void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, 
             if ((dog.getPosition().x >= 710.f &&dog.getPosition().x <=800.f )&& (dog.getPosition().y-130)  == player->getPosition().y)
             {
                 
-                life -= 1;              
+                if (!playerInvincible) {
+                life -= 1;
+                playerInvincible = true;
+                invincibleTimer = 0.f;
+              }             
                 dogActive = false;
                 somethingActive = false;
             }
@@ -146,20 +150,22 @@ void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, 
         {
             fruit.move({fruitSpeed * deltaTime, 0.f});
             if ((fruit.getPosition().x >= 545.f && fruit.getPosition().x <= 800.f)&&  player->getPosition().y == 450.f)
-            {
-                life -= 1;              
+            {              
                 fruitActive = false;
                 somethingActive = false;
+                if (!playerInvincible) {
+                life -= 1;
+                 playerInvincible = true;
+                 invincibleTimer = 0.f;
+                 }
+
             }
            else if (fruit.getPosition().x > 1280.f)
             {
                 fruitActive = false;
                 somethingActive = false;
-                 fruithalfcross = true;
             }
             window.draw(fruit);
-            if(fruit.getPosition().x >= 400.f)
-             fruithalfcross = true;
         }
 
         // BUS
@@ -168,7 +174,11 @@ void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, 
             bus.move({busSpeed * deltaTime, 0.f});
             if ((bus.getPosition().x >= 390.f && bus.getPosition().x <= 820.f) && 350.f==player->getPosition().y)
             {
-                life -= 1;              
+               if (!playerInvincible) {
+                life -= 1;
+                playerInvincible = true;
+              invincibleTimer = 0.f;
+              }             
                 busActive = false;
                 somethingActive = false;
             }
@@ -176,11 +186,9 @@ void checkCollisions(RenderWindow& window, sf::Sprite* player, bool isOnGround, 
             {
                 busActive = false;
                 somethingActive = false;
-                 bushalfcross = true;
             }
             window.draw(bus);
-            if(bus.getPosition().x >= 300.f)
-            bushalfcross = true;
+
         }
     
 
@@ -394,9 +402,6 @@ void scoreboard(sf::RenderWindow& window, int finalDistance,int score) {
     sf::Text ScoreText(font, "SCORE: " + std::to_string(score), 40);
     ScoreText.setFillColor(sf::Color::White);
 
-            
-
-
     finalScoreText.setFillColor(sf::Color::White);
 
     sf::Text restartText(font, "Press ESC to Exit", 20);
@@ -418,26 +423,21 @@ void scoreboard(sf::RenderWindow& window, int finalDistance,int score) {
     centerText(ScoreText, 80.f);  
     centerText(restartText, 150.f);
 
+    sf::RectangleShape box(sf::Vector2f({450.f, 300.f})); // width=200, height=100
+    box.setPosition({430.f, 230.f});
 
-    while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) {
-                window.close();
-            }
-            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                if (keyPressed->code == sf::Keyboard::Key::Escape) {
-                    return; // Exit the function to close the game
-                }
-            }
-        }
+    // Set fill color with transparency (alpha)
+    box.setFillColor(sf::Color(139, 69, 19, 180)); // Red, 50% transparent
+    // box.setOutlineColor(sf::Color(255, 255, 255, 200)); // white outline, mostly opaque 
 
-        window.clear(sf::Color::Black); // Black screen
+
+
+        window.draw(box);
         window.draw(gameOverText);
         window.draw(finalScoreText);
         window.draw(restartText);
         window.draw(ScoreText);
-        window.display();
-    }
+    
 }
 int main()
 {
@@ -584,17 +584,14 @@ int main()
      busSpeed   = busSpeedBase;
      int lives=3;
 
-    //HALEEEMA LAST CDEEEE
+     bool playerInvincible = false;
+     float invincibleTimer = 0.f;
+     float invincibleDuration = 1.5f; // seconds
 
-    float dogSpeedBase   = 420.0f;
-    float fruitSpeedBase = 250.0f;
-    float busSpeedBase   = 250.0f;
+     bool blinkVisible = true;
+     float blinkTimer = 0.f;
+     float blinkInterval = 0.1f; // how fast it blinks
 
-    // actual speeds used
-     dogSpeed   = dogSpeedBase;
-     fruitSpeed = fruitSpeedBase;
-     busSpeed   = busSpeedBase;
-     int lives=3;
 
     while (window.isOpen())
     {
@@ -607,19 +604,19 @@ int main()
             if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
                 if (key->code == sf::Keyboard::Key::Escape) window.close();  
-                if (key->code == sf::Keyboard::Key::Space && isOnGround) {
+                if (key->code == sf::Keyboard::Key::Space && isOnGround && !dead) {
                     isOnGround = false; jump = true; j = 0;
                 }
                 if (key->code == sf::Keyboard::Key::D && isOnGround) dead = true;
 
-                if (key->code == sf::Keyboard::Key::Down)
+                if (key->code == sf::Keyboard::Key::Down && !dead)
                 {
                     playerup = false;
                     for (int i = 0; i < 86; i++)
                         if(chsprite[i] && chsprite[i]->getPosition().y <= 350.f && chsprite[i]->getPosition().y >= 290.f)
                             chsprite[i]->setPosition({chsprite[i]->getPosition().x, chsprite[i]->getPosition().y+100.f});
                 }
-                if (key->code == sf::Keyboard::Key::Up)
+                if (key->code == sf::Keyboard::Key::Up && !dead)
                 {
                     playerup = true;
                     for (int i = 0; i < 86; i++)
@@ -630,9 +627,29 @@ int main()
         }
 
         float deltaTime = clock.restart().asSeconds();
+ 
+         if (playerInvincible) {
+         invincibleTimer += deltaTime;
+           blinkTimer += deltaTime;
 
+           if (blinkTimer >= blinkInterval) {
+           blinkTimer = 0.f;
+           blinkVisible = !blinkVisible; // toggle visibility
+         }
+
+          if (invincibleTimer >= invincibleDuration) {
+           playerInvincible = false;
+            blinkVisible = true; // ensure visible at end
+           }
+            }
+
+       if(!dead){
         bg1.move({speed * deltaTime, 0.f});
         bg2.move({speed * deltaTime, 0.f});
+     // distance counter 
+        distanceMeters += speed * deltaTime / 10.f; // adjust scale
+    }
+
         if (bg1.getPosition().x >= bgWidth)
             bg1.setPosition({bg2.getPosition().x - bgWidth, 0.f});
         if (bg2.getPosition().x >= bgWidth)
@@ -654,8 +671,6 @@ int main()
         window.draw(bg1);
         window.draw(bg2);
 
-        // distance counter 
-        distanceMeters += speed * deltaTime / 10.f; // adjust scale
 
         // ---- Difficulty scaling based on distance ----
 float difficultyMultiplier = 1.0f;
@@ -774,18 +789,22 @@ if (spawnTimer >= spawnDelay &&(distanceMeters>=120) )
 }
 
         // Draw Player and Handle Powerups
-        if (currentActiveSprite) {
-            window.draw(*currentActiveSprite);
+        if (currentActiveSprite && !dead ) {
+            if (!playerInvincible || blinkVisible) {
+             window.draw(*currentActiveSprite);}
+
             handlePowerups(window, deltaTime, speed, currentActiveSprite, playerup);
-            checkCollisions(window,currentActiveSprite, isOnGround,deltaTime, dog, dogActive, dogSpeed, fruit, fruitActive, fruitSpeed, bus, busActive, busSpeed, somethingActive, bushalfcrossed, fruithalfcrossed);
-            
+            checkCollisions(window,currentActiveSprite, isOnGround,deltaTime, dog, dogActive, dogSpeed, fruit, fruitActive, fruitSpeed, bus, busActive, busSpeed, somethingActive, playerInvincible, invincibleTimer);  
         }
+        else if(currentActiveSprite) window.draw(*currentActiveSprite);
 
         window.draw(scoreText);
         window.draw(lifeText);
-        window.display();
 
-       if (life==0) scoreboard(window, distanceMeters, score );
+       if (life==0 || dead ){ 
+        dead = true;
+        scoreboard(window, distanceMeters, score );}
+        window.display();
     } 
 
     for (int k = 0; k < 86; ++k)
