@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <SFML/System/Clock.hpp>
 #include <vector>
@@ -303,9 +304,15 @@ void menu(sf::RenderWindow& window, int& selectedPlayer)
             window.draw(instTitle);
 
             sf::Text instBody(font, "1. Keep your phone hidden like it's a state secret.\n2. Trust the driver... but also pray quietly.\n3. If someone says \"bhai tension nahi leni\" - tension is guaranteed.\n4. If a road is empty, something is wrong.\n5. If it rains, cancel your plans, your hopes, and your shoes.", 28);
-            instBody.setPosition({130.f, 290.f});
+            instBody.setPosition({130.f, 250.f});
             instBody.setFillColor(instructionGrey);
             window.draw(instBody);
+           
+            Text newBody(font, "1. Esc will end the game.\n2. Samosa and chai, are good for health, increases your score.\n3.Flag will reward you for your Patriotism as your new life.\n4. Press D to start again.", 28);
+            newBody.setPosition({130.f, 430.f});
+            newBody.setFillColor(instructionGrey);
+            window.draw(newBody);
+            
 
             sf::Text backMsg(font, "Press ESC to go back", 20);
             backMsg.setPosition({550.f, 600.f});
@@ -404,8 +411,13 @@ void scoreboard(sf::RenderWindow& window, int finalDistance,int score) {
 
     finalScoreText.setFillColor(sf::Color::White);
 
-    sf::Text restartText(font, "Press ESC to Exit", 20);
+  sf::Text restartText(font, "Press Enter to restart", 25);
     restartText.setFillColor(sf::Color(200, 200, 200));
+
+    sf::Text closeText(font, "Press ESC to Exit", 20);
+    closeText.setFillColor(sf::Color(200, 200, 200));
+
+  
 
     // Center the text
     auto centerText = [&](sf::Text& text, float yOffset) {
@@ -416,12 +428,13 @@ void scoreboard(sf::RenderWindow& window, int finalDistance,int score) {
 
     centerText(gameOverText, -100.f);
     centerText(finalScoreText, 20.f);
-    centerText(restartText, 150.f);
+    centerText(closeText, 150.f);
 
     centerText(gameOverText, -100.f);
-    centerText(finalScoreText, 20.f);
-    centerText(ScoreText, 80.f);  
-    centerText(restartText, 150.f);
+    centerText(finalScoreText, 15.f);
+    centerText(ScoreText, 70.f);  
+    centerText(closeText, 150.f);
+    centerText(restartText, 130.f);
 
     sf::RectangleShape box(sf::Vector2f({450.f, 300.f})); // width=200, height=100
     box.setPosition({430.f, 230.f});
@@ -429,18 +442,25 @@ void scoreboard(sf::RenderWindow& window, int finalDistance,int score) {
     // Set fill color with transparency (alpha)
     box.setFillColor(sf::Color(139, 69, 19, 180)); // Red, 50% transparent
     // box.setOutlineColor(sf::Color(255, 255, 255, 200)); // white outline, mostly opaque 
-
+    // restartText.setPosition({450.f,400.f});
 
 
         window.draw(box);
         window.draw(gameOverText);
         window.draw(finalScoreText);
         window.draw(restartText);
+        window.draw(closeText);
         window.draw(ScoreText);
     
 }
 int main()
 {
+      Music music;
+     if (!music.openFromFile("assets/music.ogg"))
+      return -1;
+     music.setLooping(true); 
+     music.setVolume(50.f);
+      music.play();
     srand(static_cast<unsigned>(time(0))); 
     sf::RenderWindow window(sf::VideoMode({1280, 720}), "Karachi Survival - SFML 3");
     window.setFramerateLimit(60);
@@ -592,6 +612,7 @@ int main()
      float blinkTimer = 0.f;
      float blinkInterval = 0.1f; // how fast it blinks
 
+ 
 
     while (window.isOpen())
     {
@@ -603,7 +624,13 @@ int main()
 
             if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
-                if (key->code == sf::Keyboard::Key::Escape) window.close();  
+                if (key->code == sf::Keyboard::Key::Escape) window.close(); 
+                 if (key->code == sf::Keyboard::Key::Enter && dead) {
+                     dead = false; life =3;
+                     distanceMeters =0; score = 0;
+                 }
+                     
+
                 if (key->code == sf::Keyboard::Key::Space && isOnGround && !dead) {
                     isOnGround = false; jump = true; j = 0;
                 }
@@ -737,7 +764,7 @@ if (spawnTimer >= spawnDelay)
 {
     spawnTimer = 0.f;
 
-    int r = rand() % 3;
+    int r = rand() % 4;
 
     if (r == 0 && !dogActive)
     {
@@ -760,11 +787,11 @@ if (spawnTimer >= spawnDelay)
         dog.setPosition({-dog.getGlobalBounds().size.x, 480.f});
     }
 }
-if (spawnTimer >= spawnDelay &&(distanceMeters>=120) )
+if (spawnTimer >= spawnDelay &&(distanceMeters>=200) )
 {
     spawnTimer = 0.f;
 
-    int r = rand() % 3;
+    int r = rand() % 4;
 
     if (r == 0 && !dogActive)
     {
@@ -793,6 +820,7 @@ if (spawnTimer >= spawnDelay &&(distanceMeters>=120) )
             if (!playerInvincible || blinkVisible) {
              window.draw(*currentActiveSprite);}
 
+            
             handlePowerups(window, deltaTime, speed, currentActiveSprite, playerup);
             checkCollisions(window,currentActiveSprite, isOnGround,deltaTime, dog, dogActive, dogSpeed, fruit, fruitActive, fruitSpeed, bus, busActive, busSpeed, somethingActive, playerInvincible, invincibleTimer);  
         }
