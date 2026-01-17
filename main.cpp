@@ -628,6 +628,9 @@ int main()
                  if (key->code == sf::Keyboard::Key::Enter && dead) {
                      dead = false; life =3;
                      distanceMeters =0; score = 0;
+                         menu(window, playerChoice);
+                        string character = (playerChoice == 1) ? "boy" : "girl";
+                            spritesfix(chtexture, chsprite, window, character);
                  }
                      
 
